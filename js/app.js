@@ -27,6 +27,7 @@ function saveAuthToken(token) {
 
 
 function clearAuth() {
+
     localStorage.removeItem(
         "sageJournalToken"
     );
@@ -72,10 +73,6 @@ function getCurrentPage() {
 
     return page || "index.html";
 }
-
-
-const currentPage =
-    getCurrentPage();
 
 
 const publicPages = [
@@ -149,9 +146,8 @@ async function apiRequest(
             clearAuth();
 
             /*
-             * Only redirect automatically
-             * when a protected API request
-             * fails.
+             * Only redirect when a protected
+             * page makes an unauthorized request.
              */
             if (
                 !publicPages.includes(
@@ -192,13 +188,8 @@ async function verifyAuthentication() {
         getAuthToken();
 
 
-    /*
-     * No token.
-     */
     if (!token) {
-
         return false;
-
     }
 
 
@@ -210,9 +201,6 @@ async function verifyAuthentication() {
             );
 
 
-        /*
-         * Keep the latest user information.
-         */
         if (data?.user) {
 
             localStorage.setItem(
@@ -244,6 +232,10 @@ async function verifyAuthentication() {
 
 async function initializeAuth() {
 
+    const currentPage =
+        getCurrentPage();
+
+
     const isPublicPage =
         publicPages.includes(
             currentPage
@@ -251,9 +243,8 @@ async function initializeAuth() {
 
 
     /*
-     * Prevent protected pages from
-     * flashing before authentication
-     * is checked.
+     * Hide protected pages while
+     * authentication is being checked.
      */
     if (!isPublicPage) {
 
@@ -272,15 +263,15 @@ async function initializeAuth() {
         getAuthToken();
 
 
-    /*
-     * PUBLIC PAGE
-     * Login / Register
-     */
+    /* =====================================================
+       PUBLIC PAGE
+       ===================================================== */
+
     if (isPublicPage) {
 
         /*
-         * No token means user is allowed
-         * to stay here.
+         * Logged out:
+         * stay on login/register.
          */
         if (!token) {
 
@@ -297,8 +288,7 @@ async function initializeAuth() {
 
         /*
          * Token exists.
-         * Do NOT blindly trust it.
-         * Verify it first.
+         * Verify it before redirecting.
          */
         const valid =
             await verifyAuthentication();
@@ -316,8 +306,8 @@ async function initializeAuth() {
 
 
         /*
-         * Invalid token.
-         * Stay on login/register.
+         * Invalid/expired token.
+         * Stay on current public page.
          */
         document.body.classList.remove(
             "auth-loading"
@@ -330,9 +320,10 @@ async function initializeAuth() {
     }
 
 
-    /*
-     * PROTECTED PAGE
-     */
+    /* =====================================================
+       PROTECTED PAGE
+       ===================================================== */
+
     if (!token) {
 
         window.location.replace(
@@ -344,10 +335,6 @@ async function initializeAuth() {
     }
 
 
-    /*
-     * Verify token before showing
-     * the dashboard.
-     */
     const valid =
         await verifyAuthentication();
 
@@ -365,6 +352,7 @@ async function initializeAuth() {
 
     /*
      * Authentication confirmed.
+     * Only now initialize the dashboard/app.
      */
     document.body.classList.remove(
         "auth-loading"
@@ -390,8 +378,11 @@ async function initializeAuth() {
 
 function initializePublicPage() {
 
+    initializePublicNavigation();
+
+
     if (
-        currentPage ===
+        getCurrentPage() ===
         "login.html"
     ) {
 
@@ -401,13 +392,81 @@ function initializePublicPage() {
 
 
     if (
-        currentPage ===
+        getCurrentPage() ===
         "register.html"
     ) {
 
         initializeRegister();
 
     }
+
+}
+
+
+/* =========================================================
+   PUBLIC NAVIGATION
+   ========================================================= */
+
+function initializePublicNavigation() {
+
+    /*
+     * Explicitly handle the login/register
+     * links instead of relying only on the
+     * browser's default navigation.
+     */
+
+    const registerLinks =
+        document.querySelectorAll(
+            'a[href="register.html"], ' +
+            'a[href="./register.html"]'
+        );
+
+
+    registerLinks.forEach(
+        link => {
+
+            link.addEventListener(
+                "click",
+                event => {
+
+                    event.preventDefault();
+
+                    window.location.assign(
+                        "./register.html"
+                    );
+
+                }
+            );
+
+        }
+    );
+
+
+    const loginLinks =
+        document.querySelectorAll(
+            'a[href="login.html"], ' +
+            'a[href="./login.html"]'
+        );
+
+
+    loginLinks.forEach(
+        link => {
+
+            link.addEventListener(
+                "click",
+                event => {
+
+                    event.preventDefault();
+
+                    window.location.assign(
+                        "./login.html"
+                    );
+
+                }
+            );
+
+        }
+    );
 
 }
 
@@ -446,6 +505,21 @@ function initializeLogin() {
     if (!form) {
         return;
     }
+
+
+    /*
+     * Prevent duplicate submit handlers.
+     */
+    if (
+        form.dataset.initialized ===
+        "true"
+    ) {
+        return;
+    }
+
+
+    form.dataset.initialized =
+        "true";
 
 
     form.addEventListener(
@@ -560,10 +634,12 @@ function initializeLogin() {
                 }
 
 
+                /*
+                 * Full navigation to dashboard.
+                 */
                 window.location.replace(
-                    "index.html"
+                    "./index.html"
                 );
-
 
             } catch (err) {
 
@@ -608,6 +684,21 @@ function initializeRegister() {
     if (!form) {
         return;
     }
+
+
+    /*
+     * Prevent duplicate submit handlers.
+     */
+    if (
+        form.dataset.initialized ===
+        "true"
+    ) {
+        return;
+    }
+
+
+    form.dataset.initialized =
+        "true";
 
 
     form.addEventListener(
@@ -754,13 +845,12 @@ function initializeRegister() {
 
 
                 /*
-                 * New user goes directly
-                 * to dashboard.
+                 * New account goes directly
+                 * to the protected dashboard.
                  */
                 window.location.replace(
-                    "index.html"
+                    "./index.html"
                 );
-
 
             } catch (err) {
 
@@ -841,7 +931,7 @@ function initializeNavigation() {
 
             if (
                 href ===
-                currentPage
+                getCurrentPage()
             ) {
 
                 item.classList.add(
@@ -954,7 +1044,7 @@ function initializeLogout() {
             clearAuth();
 
             window.location.replace(
-                "login.html"
+                "./login.html"
             );
 
         }
@@ -1533,7 +1623,7 @@ async function saveTrade(
     if (!getAuthToken()) {
 
         window.location.replace(
-            "login.html"
+            "./login.html"
         );
 
         return;
@@ -1882,7 +1972,7 @@ async function saveTrade(
 
 
         window.location.replace(
-            "trades.html"
+            "./trades.html"
         );
 
 
@@ -2074,7 +2164,6 @@ function calculateRR() {
 
         }
 
-
         return;
 
     }
@@ -2208,7 +2297,29 @@ function escapeHtml(
    START APP
    ========================================================= */
 
-initializeAuth();
+/*
+ * IMPORTANT:
+ * Wait until the HTML is fully loaded before
+ * initializing login/register/dashboard logic.
+ */
+if (
+    document.readyState ===
+    "loading"
+) {
+
+    document.addEventListener(
+        "DOMContentLoaded",
+        initializeAuth,
+        {
+            once: true
+        }
+    );
+
+} else {
+
+    initializeAuth();
+
+}
 
 
 /* =========================================================
