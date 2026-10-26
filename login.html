@@ -1,116 +1,133 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">
+<!DOCTYPE html>
+<html lang="en">
 
-<meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
->
+<head>
 
-<title>Sage Journal — Login</title>
+    <meta charset="UTF-8">
 
-<link
-    rel="stylesheet"
-    href="./css/style.css"
->
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
-</head><body><main class="auth-page"><div class="auth-card">
+    <title>Sage Journal — Login</title>
 
-    <div class="auth-brand">
+    <link
+        rel="stylesheet"
+        href="./css/style.css"
+    >
 
-        <div class="brand-mark">
-            S
+</head>
+
+<body>
+
+<main class="auth-page">
+
+    <div class="auth-card">
+
+        <div class="auth-brand">
+
+            <div class="brand-mark">
+                S
+            </div>
+
+            <div>
+                <h1>Sage</h1>
+                <span>Journal</span>
+            </div>
+
         </div>
 
-        <div>
-            <h1>Sage</h1>
-            <span>Journal</span>
+
+        <div class="auth-heading">
+
+            <h2>
+                Welcome back
+            </h2>
+
+            <p>
+                Login to continue to your trading journal.
+            </p>
+
         </div>
 
-    </div>
+
+        <form id="loginForm">
+
+            <div class="form-group">
+
+                <label for="loginEmail">
+                    Email
+                </label>
+
+                <input
+                    type="email"
+                    id="loginEmail"
+                    name="email"
+                    placeholder="you@example.com"
+                    autocomplete="email"
+                    required
+                >
+
+            </div>
 
 
-    <div class="auth-heading">
+            <div class="form-group">
 
-        <h2>
-            Welcome back
-        </h2>
+                <label for="loginPassword">
+                    Password
+                </label>
 
-        <p>
-            Login to continue to your trading journal.
-        </p>
+                <input
+                    type="password"
+                    id="loginPassword"
+                    name="password"
+                    placeholder="Enter your password"
+                    autocomplete="current-password"
+                    required
+                >
 
-    </div>
+            </div>
 
 
-    <form id="loginForm">
+            <p
+                id="loginError"
+                class="auth-error"
+            ></p>
 
-        <div class="form-group">
 
-            <label for="loginEmail">
-                Email
-            </label>
-
-            <input
-                type="email"
-                id="loginEmail"
-                name="email"
-                placeholder="you@example.com"
-                autocomplete="email"
-                required
+            <button
+                type="submit"
+                class="primary-btn auth-submit"
             >
+                Login
+            </button>
 
-        </div>
+        </form>
 
 
-        <div class="form-group">
+        <div class="auth-switch">
 
-            <label for="loginPassword">
-                Password
-            </label>
+            <span>
+                Don't have an account?
+            </span>
 
-            <input
-                type="password"
-                id="loginPassword"
-                name="password"
-                placeholder="Enter your password"
-                autocomplete="current-password"
-                required
+            <a
+                href="./register.html"
+                id="createAccountLink"
             >
+                Create account
+            </a>
 
         </div>
-
-
-        <p
-            id="loginError"
-            class="auth-error"
-            aria-live="polite"
-        ></p>
-
-
-        <button
-            type="submit"
-            class="primary-btn auth-submit"
-        >
-            Login
-        </button>
-
-    </form>
-
-
-    <div class="auth-switch">
-
-        <span>
-            Don't have an account?
-        </span>
-
-        <a
-            href="./register.html"
-            id="createAccountLink"
-        >
-            Create account
-        </a>
 
     </div>
 
-</div>
+</main>
 
-</main><script src="./js/app.js"></script></body></html>
+
+<script src="./js/app.js"></script>
+
+</body>
+
+</html>
