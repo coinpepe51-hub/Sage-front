@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sage Journal — Trades</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+<div class="app">
+
+    <aside class="sidebar">
+
+        <div class="brand">
+            <div class="brand-mark">S</div>
+
+            <div>
+                <h2>Sage</h2>
+                <span>Journal</span>
+            </div>
+        </div>
+
+
+        <nav>
+
+            <a href="index.html" class="nav-item">
+                <span>⌂</span> Dashboard
+            </a>
+
+            <a href="calendar.html" class="nav-item">
+                <span>□</span> Calendar
+            </a>
+
+            <a href="trades.html" class="nav-item active">
+                <span>↗</span> Trades
+            </a>
+
+            <a href="add-trade.html" class="nav-item">
+                <span>＋</span> Add Trade
+            </a>
+
+            <a href="analytics.html" class="nav-item">
+                <span>◫</span> Analytics
+            </a>
+
+        </nav>
+
+
+        <div class="sidebar-bottom">
+
+            <div class="account-mini">
+
+                <div class="avatar">S</div>
+
+                <div>
+                    <strong>Trader</strong>
+                    <small>Demo Account</small>
+                </div>
+
+            </div>
+
+        </div>
+
+    </aside>
+
+
+    <main class="main">
+
+        <header class="topbar">
+
+            <button class="mobile-menu" id="mobileMenu">☰</button>
+
+            <div>
+                <p class="eyebrow">TRADING JOURNAL</p>
+                <h1>Trades</h1>
+            </div>
+
+            <a href="add-trade.html" class="primary-btn">
+                + Add Trade
+            </a>
+
+        </header>
+
+
+        <section class="panel">
+
+            <div class="trade-toolbar">
+
+                <div class="search-box">
+                    <input
+                        type="text"
+                        id="tradeSearch"
+                        placeholder="Search pair, setup..."
+                    >
+                </div>
+
+                <select id="resultFilter">
+                    <option value="all">All Results</option>
+                    <option value="win">Wins</option>
+                    <option value="loss">Losses</option>
+                    <option value="breakeven">Breakeven</option>
+                </select>
+
+            </div>
+
+
+            <div class="table-wrapper">
+
+                <table>
+
+                    <thead>
+
+                        <tr>
+                            <th>Date</th>
+                            <th>Pair</th>
+                            <th>Direction</th>
+                            <th>Session</th>
+                            <th>Setup</th>
+                            <th>Result</th>
+                            <th>R</th>
+                            <th>P&L</th>
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody id="allTrades">
+
+                        <tr class="empty-row">
+
+                            <td colspan="8">
+                                No trades recorded yet.
+                            </td>
+
+                        </tr>
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </section>
+
+    </main>
+
+</div>
+
+<script src="js/app.js"></script>
+
+</body>
+</html>
