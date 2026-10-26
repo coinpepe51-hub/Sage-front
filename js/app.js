@@ -1,6 +1,6 @@
 /* =========================================================
    SAGE JOURNAL
-   SINGLE PAGE FRONTEND
+   FRONTEND APP
    ========================================================= */
 
 const API_BASE_URL =
@@ -12,53 +12,60 @@ const API_BASE_URL =
    ========================================================= */
 
 function getAuthToken() {
-    return localStorage.getItem(
-        "sageJournalToken"
-    );
+    return localStorage.getItem("sageJournalToken");
 }
-
 
 function saveAuthToken(token) {
-    localStorage.setItem(
-        "sageJournalToken",
-        token
-    );
+    localStorage.setItem("sageJournalToken", token);
 }
-
 
 function clearAuth() {
-
-    localStorage.removeItem(
-        "sageJournalToken"
-    );
-
-    localStorage.removeItem(
-        "sageJournalUser"
-    );
+    localStorage.removeItem("sageJournalToken");
+    localStorage.removeItem("sageJournalUser");
 }
 
-
 function getCurrentUser() {
-
     try {
-
         return JSON.parse(
-            localStorage.getItem(
-                "sageJournalUser"
-            )
+            localStorage.getItem("sageJournalUser")
         );
-
     } catch {
-
         return null;
-
     }
-
 }
 
 
 /* =========================================================
-   API
+   PAGE DETECTION
+   ========================================================= */
+
+function getCurrentPage() {
+
+    const pathname =
+        window.location.pathname;
+
+    const filename =
+        pathname.split("/").pop();
+
+    return filename || "index.html";
+}
+
+const currentPage =
+    getCurrentPage();
+
+const isLoginPage =
+    currentPage === "login.html";
+
+const isRegisterPage =
+    currentPage === "register.html";
+
+const isPublicPage =
+    isLoginPage ||
+    isRegisterPage;
+
+
+/* =========================================================
+   API REQUEST
    ========================================================= */
 
 async function apiRequest(
@@ -69,189 +76,81 @@ async function apiRequest(
     const token =
         getAuthToken();
 
-
     const headers = {
-
-        "Content-Type":
-            "application/json",
-
+        "Content-Type": "application/json",
         ...(options.headers || {})
-
     };
 
-
     if (token) {
-
         headers.Authorization =
             `Bearer ${token}`;
-
     }
-
 
     let response;
 
-
     try {
 
-        response =
-            await fetch(
-                `${API_BASE_URL}${endpoint}`,
-                {
-                    ...options,
-                    headers
-                }
-            );
+        response = await fetch(
+            `${API_BASE_URL}${endpoint}`,
+            {
+                ...options,
+                headers
+            }
+        );
 
     } catch (error) {
 
         throw new Error(
-            "Unable to connect to the Sage server."
+            "Unable to connect to the Sage Journal server."
         );
-
     }
-
 
     let data = null;
 
-
     try {
-
-        data =
-            await response.json();
-
+        data = await response.json();
     } catch {
-
         data = null;
-
     }
-
 
     if (!response.ok) {
 
+        /*
+         * Only destroy the local session when
+         * an authenticated request is rejected.
+         */
         if (
             response.status === 401 &&
             token
         ) {
-
             clearAuth();
 
-        }
+            /*
+             * Do NOT redirect login/register pages.
+             */
+            if (!isPublicPage) {
 
+                window.location.replace(
+                    "/login.html"
+                );
+
+                return;
+            }
+        }
 
         throw new Error(
             data?.error ||
             data?.message ||
             `Request failed (${response.status})`
         );
-
     }
 
-
     return data;
-
 }
 
 
 /* =========================================================
-   SCREEN CONTROL
-   ========================================================= */
-
-function showAuthScreen() {
-
-    document.body.classList.remove(
-        "dashboard-mode"
-    );
-
-    document.body.classList.add(
-        "auth-mode"
-    );
-
-}
-
-
-function showDashboard() {
-
-    document.body.classList.remove(
-        "auth-mode"
-    );
-
-    document.body.classList.add(
-        "dashboard-mode"
-    );
-
-}
-
-
-function showLoginForm() {
-
-    const register =
-        document.getElementById(
-            "registerView"
-        );
-
-    const login =
-        document.getElementById(
-            "loginView"
-        );
-
-
-    register?.classList.remove(
-        "active"
-    );
-
-    login?.classList.add(
-        "active"
-    );
-
-
-    document.getElementById(
-        "loginError"
-    ).textContent = "";
-
-
-    document.getElementById(
-        "registerError"
-    ).textContent = "";
-
-}
-
-
-function showRegisterForm() {
-
-    const register =
-        document.getElementById(
-            "registerView"
-        );
-
-    const login =
-        document.getElementById(
-            "loginView"
-        );
-
-
-    login?.classList.remove(
-        "active"
-    );
-
-    register?.classList.add(
-        "active"
-    );
-
-
-    document.getElementById(
-        "loginError"
-    ).textContent = "";
-
-
-    document.getElementById(
-        "registerError"
-    ).textContent = "";
-
-}
-
-
-/* =========================================================
-   AUTH VERIFICATION
+   VERIFY CURRENT SESSION
    ========================================================= */
 
 async function verifyAuthentication() {
@@ -259,13 +158,9 @@ async function verifyAuthentication() {
     const token =
         getAuthToken();
 
-
     if (!token) {
-
         return false;
-
     }
-
 
     try {
 
@@ -274,23 +169,15 @@ async function verifyAuthentication() {
                 "/auth/me"
             );
 
+        if (data?.user) {
 
-        if (!data?.user) {
-
-            clearAuth();
-
-            return false;
-
+            localStorage.setItem(
+                "sageJournalUser",
+                JSON.stringify(
+                    data.user
+                )
+            );
         }
-
-
-        localStorage.setItem(
-            "sageJournalUser",
-            JSON.stringify(
-                data.user
-            )
-        );
-
 
         return true;
 
@@ -299,24 +186,64 @@ async function verifyAuthentication() {
         clearAuth();
 
         return false;
-
     }
-
 }
 
 
 /* =========================================================
-   START
+   AUTH PAGE INITIALIZATION
    ========================================================= */
 
-async function initializeApp() {
+async function initializeAuth() {
 
     /*
-     * Keep the page hidden while
-     * authentication is checked.
+     * PUBLIC PAGES
+     *
+     * Login and register are always allowed
+     * to load normally.
+     *
+     * We intentionally DO NOT redirect based
+     * on a token here.
+     *
+     * This prevents:
+     *
+     * login -> register
+     *
+     * from being interrupted by the auth guard.
      */
-    document.body.classList.remove(
-        "app-ready"
+
+    if (isPublicPage) {
+
+        document.body.classList.remove(
+            "auth-loading"
+        );
+
+        document.documentElement.classList.remove(
+            "auth-checking"
+        );
+
+        if (isLoginPage) {
+            initializeLogin();
+        }
+
+        if (isRegisterPage) {
+            initializeRegister();
+        }
+
+        return;
+    }
+
+
+    /* =====================================================
+       PROTECTED PAGES
+       ===================================================== */
+
+    document.documentElement.classList.add(
+        "auth-checking"
+    );
+
+    document.body.classList.add(
+        "auth-loading"
     );
 
 
@@ -325,27 +252,20 @@ async function initializeApp() {
 
 
     /*
-     * No token = brand-new/logged-out user.
+     * No token = definitely logged out.
      */
     if (!token) {
 
-        showAuthScreen();
-
-        document.body.classList.add(
-            "app-ready"
+        window.location.replace(
+            "/login.html"
         );
 
-        initializeAuthForms();
-
         return;
-
     }
 
 
     /*
-     * Token exists.
-     * Verify it against the
-     * deployed backend/database.
+     * Verify token with the REAL deployed backend.
      */
     const valid =
         await verifyAuthentication();
@@ -353,396 +273,39 @@ async function initializeApp() {
 
     if (!valid) {
 
-        showAuthScreen();
-
-        document.body.classList.add(
-            "app-ready"
+        window.location.replace(
+            "/login.html"
         );
 
-        initializeAuthForms();
-
         return;
-
     }
 
 
     /*
-     * Valid session.
+     * Authentication confirmed.
      */
-    showDashboard();
-
-    initializeDashboardApp();
-
-    document.body.classList.add(
-        "app-ready"
+    document.body.classList.remove(
+        "auth-loading"
     );
 
+    document.body.classList.add(
+        "authenticated"
+    );
+
+    document.documentElement.classList.remove(
+        "auth-checking"
+    );
+
+
+    initializeProtectedPage();
 }
 
 
 /* =========================================================
-   AUTH FORMS
+   PROTECTED PAGE
    ========================================================= */
 
-function initializeAuthForms() {
-
-    const loginForm =
-        document.getElementById(
-            "loginForm"
-        );
-
-
-    const registerForm =
-        document.getElementById(
-            "registerForm"
-        );
-
-
-    document
-        .getElementById(
-            "showLogin"
-        )
-        ?.addEventListener(
-            "click",
-            showLoginForm
-        );
-
-
-    document
-        .getElementById(
-            "showRegister"
-        )
-        ?.addEventListener(
-            "click",
-            showRegisterForm
-        );
-
-
-    if (loginForm) {
-
-        loginForm.addEventListener(
-            "submit",
-            handleLogin
-        );
-
-    }
-
-
-    if (registerForm) {
-
-        registerForm.addEventListener(
-            "submit",
-            handleRegister
-        );
-
-    }
-
-}
-
-
-/* =========================================================
-   LOGIN
-   ========================================================= */
-
-async function handleLogin(event) {
-
-    event.preventDefault();
-
-
-    const email =
-        document
-            .getElementById(
-                "loginEmail"
-            )
-            .value
-            .trim();
-
-
-    const password =
-        document
-            .getElementById(
-                "loginPassword"
-            )
-            .value;
-
-
-    const error =
-        document.getElementById(
-            "loginError"
-        );
-
-
-    const button =
-        event.currentTarget.querySelector(
-            'button[type="submit"]'
-        );
-
-
-    error.textContent = "";
-
-
-    if (!email || !password) {
-
-        error.textContent =
-            "Enter your email and password.";
-
-        return;
-
-    }
-
-
-    try {
-
-        button.disabled = true;
-
-        button.textContent =
-            "Signing in...";
-
-
-        const data =
-            await apiRequest(
-                "/auth/login",
-                {
-                    method: "POST",
-
-                    body:
-                        JSON.stringify({
-                            email,
-                            password
-                        })
-                }
-            );
-
-
-        if (!data?.token) {
-
-            throw new Error(
-                "Login succeeded but no authentication token was returned."
-            );
-
-        }
-
-
-        saveAuthToken(
-            data.token
-        );
-
-
-        if (data.user) {
-
-            localStorage.setItem(
-                "sageJournalUser",
-                JSON.stringify(
-                    data.user
-                )
-            );
-
-        }
-
-
-        /*
-         * No login.html.
-         * No redirect.
-         * Simply switch to dashboard.
-         */
-        showDashboard();
-
-        initializeDashboardApp();
-
-
-    } catch (err) {
-
-        error.textContent =
-            err.message;
-
-        button.disabled = false;
-
-        button.textContent =
-            "Login";
-
-    }
-
-}
-
-
-/* =========================================================
-   REGISTER
-   ========================================================= */
-
-async function handleRegister(event) {
-
-    event.preventDefault();
-
-
-    const displayName =
-        document
-            .getElementById(
-                "registerName"
-            )
-            .value
-            .trim();
-
-
-    const email =
-        document
-            .getElementById(
-                "registerEmail"
-            )
-            .value
-            .trim();
-
-
-    const password =
-        document
-            .getElementById(
-                "registerPassword"
-            )
-            .value;
-
-
-    const error =
-        document.getElementById(
-            "registerError"
-        );
-
-
-    const button =
-        event.currentTarget.querySelector(
-            'button[type="submit"]'
-        );
-
-
-    error.textContent = "";
-
-
-    if (
-        !displayName ||
-        !email ||
-        !password
-    ) {
-
-        error.textContent =
-            "Please complete all fields.";
-
-        return;
-
-    }
-
-
-    if (password.length < 8) {
-
-        error.textContent =
-            "Password must be at least 8 characters.";
-
-        return;
-
-    }
-
-
-    try {
-
-        button.disabled = true;
-
-        button.textContent =
-            "Creating account...";
-
-
-        const data =
-            await apiRequest(
-                "/auth/register",
-                {
-                    method: "POST",
-
-                    body:
-                        JSON.stringify({
-
-                            displayName,
-
-                            email,
-
-                            password
-
-                        })
-                }
-            );
-
-
-        if (!data?.token) {
-
-            throw new Error(
-                "Account was created but no authentication token was returned."
-            );
-
-        }
-
-
-        saveAuthToken(
-            data.token
-        );
-
-
-        if (data.user) {
-
-            localStorage.setItem(
-                "sageJournalUser",
-                JSON.stringify(
-                    data.user
-                )
-            );
-
-        }
-
-
-        /*
-         * Registration is complete.
-         * Show dashboard immediately.
-         */
-        showDashboard();
-
-        initializeDashboardApp();
-
-
-    } catch (err) {
-
-        error.textContent =
-            err.message;
-
-        button.disabled = false;
-
-        button.textContent =
-            "Create Account";
-
-    }
-
-}
-
-
-/* =========================================================
-   DASHBOARD INITIALIZATION
-   ========================================================= */
-
-let dashboardInitialized = false;
-
-
-function initializeDashboardApp() {
-
-    /*
-     * Prevent duplicate event listeners
-     * when switching login -> dashboard.
-     */
-    if (dashboardInitialized) {
-
-        initializeUser();
-
-        initializeDashboard();
-
-        return;
-
-    }
-
-
-    dashboardInitialized = true;
-
+function initializeProtectedPage() {
 
     initializeNavigation();
 
@@ -753,7 +316,350 @@ function initializeDashboardApp() {
     initializeTradeForm();
 
     initializeDashboard();
+}
 
+
+/* =========================================================
+   LOGIN
+   ========================================================= */
+
+function initializeLogin() {
+
+    const form =
+        document.getElementById(
+            "loginForm"
+        );
+
+    if (!form) {
+        return;
+    }
+
+
+    /*
+     * IMPORTANT:
+     *
+     * We do NOT redirect away from login
+     * just because a token exists.
+     *
+     * This allows the user to freely move
+     * between login.html and register.html.
+     */
+
+
+    form.addEventListener(
+        "submit",
+        async event => {
+
+            event.preventDefault();
+
+
+            const email =
+                document
+                    .getElementById(
+                        "loginEmail"
+                    )
+                    ?.value
+                    .trim();
+
+
+            const password =
+                document
+                    .getElementById(
+                        "loginPassword"
+                    )
+                    ?.value;
+
+
+            const error =
+                document.getElementById(
+                    "loginError"
+                );
+
+
+            if (error) {
+                error.textContent = "";
+            }
+
+
+            if (!email || !password) {
+
+                if (error) {
+                    error.textContent =
+                        "Enter your email and password.";
+                }
+
+                return;
+            }
+
+
+            const button =
+                form.querySelector(
+                    'button[type="submit"]'
+                );
+
+
+            try {
+
+                if (button) {
+
+                    button.disabled =
+                        true;
+
+                    button.textContent =
+                        "Signing in...";
+                }
+
+
+                const data =
+                    await apiRequest(
+                        "/auth/login",
+                        {
+                            method: "POST",
+
+                            body:
+                                JSON.stringify({
+                                    email,
+                                    password
+                                })
+                        }
+                    );
+
+
+                if (!data?.token) {
+
+                    throw new Error(
+                        "Login succeeded but no authentication token was returned."
+                    );
+                }
+
+
+                saveAuthToken(
+                    data.token
+                );
+
+
+                if (data.user) {
+
+                    localStorage.setItem(
+                        "sageJournalUser",
+                        JSON.stringify(
+                            data.user
+                        )
+                    );
+                }
+
+
+                /*
+                 * Use an absolute Netlify path.
+                 */
+                window.location.replace(
+                    "/index.html"
+                );
+
+
+            } catch (errorObject) {
+
+                if (error) {
+
+                    error.textContent =
+                        errorObject.message;
+                }
+
+
+                if (button) {
+
+                    button.disabled =
+                        false;
+
+                    button.textContent =
+                        "Login";
+                }
+            }
+        }
+    );
+}
+
+
+/* =========================================================
+   REGISTER
+   ========================================================= */
+
+function initializeRegister() {
+
+    const form =
+        document.getElementById(
+            "registerForm"
+        );
+
+    if (!form) {
+        return;
+    }
+
+
+    form.addEventListener(
+        "submit",
+        async event => {
+
+            event.preventDefault();
+
+
+            const displayName =
+                document
+                    .getElementById(
+                        "registerName"
+                    )
+                    ?.value
+                    .trim();
+
+
+            const email =
+                document
+                    .getElementById(
+                        "registerEmail"
+                    )
+                    ?.value
+                    .trim();
+
+
+            const password =
+                document
+                    .getElementById(
+                        "registerPassword"
+                    )
+                    ?.value;
+
+
+            const error =
+                document.getElementById(
+                    "registerError"
+                );
+
+
+            if (error) {
+                error.textContent = "";
+            }
+
+
+            if (
+                !displayName ||
+                !email ||
+                !password
+            ) {
+
+                if (error) {
+
+                    error.textContent =
+                        "Please complete all fields.";
+                }
+
+                return;
+            }
+
+
+            if (password.length < 8) {
+
+                if (error) {
+
+                    error.textContent =
+                        "Password must be at least 8 characters.";
+                }
+
+                return;
+            }
+
+
+            const button =
+                form.querySelector(
+                    'button[type="submit"]'
+                );
+
+
+            try {
+
+                if (button) {
+
+                    button.disabled =
+                        true;
+
+                    button.textContent =
+                        "Creating account...";
+                }
+
+
+                const data =
+                    await apiRequest(
+                        "/auth/register",
+                        {
+                            method: "POST",
+
+                            body:
+                                JSON.stringify({
+                                    displayName,
+                                    email,
+                                    password
+                                })
+                        }
+                    );
+
+
+                if (!data?.token) {
+
+                    throw new Error(
+                        "Account was created but no authentication token was returned."
+                    );
+                }
+
+
+                /*
+                 * Backend has created the account
+                 * in the deployed PostgreSQL database.
+                 *
+                 * Store the returned JWT.
+                 */
+                saveAuthToken(
+                    data.token
+                );
+
+
+                if (data.user) {
+
+                    localStorage.setItem(
+                        "sageJournalUser",
+                        JSON.stringify(
+                            data.user
+                        )
+                    );
+                }
+
+
+                /*
+                 * New account -> dashboard.
+                 */
+                window.location.replace(
+                    "/index.html"
+                );
+
+
+            } catch (errorObject) {
+
+                if (error) {
+
+                    error.textContent =
+                        errorObject.message;
+                }
+
+
+                if (button) {
+
+                    button.disabled =
+                        false;
+
+                    button.textContent =
+                        "Create Account";
+                }
+            }
+        }
+    );
 }
 
 
@@ -767,7 +673,6 @@ function initializeNavigation() {
         document.querySelector(
             ".sidebar"
         );
-
 
     const mobileMenu =
         document.getElementById(
@@ -787,10 +692,8 @@ function initializeNavigation() {
                 sidebar.classList.toggle(
                     "mobile-open"
                 );
-
             }
         );
-
     }
 
 
@@ -800,6 +703,23 @@ function initializeNavigation() {
         )
         .forEach(item => {
 
+            const href =
+                item.getAttribute(
+                    "href"
+                );
+
+
+            if (
+                href ===
+                currentPage
+            ) {
+
+                item.classList.add(
+                    "active"
+                );
+            }
+
+
             item.addEventListener(
                 "click",
                 () => {
@@ -807,12 +727,9 @@ function initializeNavigation() {
                     sidebar?.classList.remove(
                         "mobile-open"
                     );
-
                 }
             );
-
         });
-
 }
 
 
@@ -825,7 +742,6 @@ function initializeUser() {
     const user =
         getCurrentUser();
 
-
     if (!user) {
         return;
     }
@@ -834,7 +750,8 @@ function initializeUser() {
     const name =
         user.displayName ||
         user.name ||
-        user.email?.split("@")[0] ||
+        user.email
+            ?.split("@")[0] ||
         "Trader";
 
 
@@ -846,7 +763,6 @@ function initializeUser() {
 
             element.textContent =
                 name;
-
         });
 
 
@@ -858,7 +774,6 @@ function initializeUser() {
 
             element.textContent =
                 user.email || "";
-
         });
 
 
@@ -872,9 +787,7 @@ function initializeUser() {
                 name
                     .charAt(0)
                     .toUpperCase();
-
         });
-
 }
 
 
@@ -889,7 +802,6 @@ function initializeLogout() {
             "logoutButton"
         );
 
-
     if (!button) {
         return;
     }
@@ -901,16 +813,11 @@ function initializeLogout() {
 
             clearAuth();
 
-            dashboardInitialized =
-                false;
-
-            showAuthScreen();
-
-            showLoginForm();
-
+            window.location.replace(
+                "/login.html"
+            );
         }
     );
-
 }
 
 
@@ -924,7 +831,6 @@ async function initializeDashboard() {
         document.getElementById(
             "dashboard"
         );
-
 
     if (!dashboard) {
         return;
@@ -949,16 +855,13 @@ async function initializeDashboard() {
             trades
         );
 
-
     } catch (error) {
 
         console.error(
             "Dashboard error:",
             error
         );
-
     }
-
 }
 
 
@@ -966,7 +869,9 @@ async function initializeDashboard() {
    DASHBOARD DATA
    ========================================================= */
 
-function updateDashboard(trades) {
+function updateDashboard(
+    trades
+) {
 
     const total =
         trades.length;
@@ -1047,9 +952,11 @@ function updateDashboard(trades) {
 
     const winRate =
         total
-            ? wins.length /
-              total *
-              100
+            ? (
+                wins.length /
+                total *
+                100
+            )
             : 0;
 
 
@@ -1104,9 +1011,7 @@ function updateDashboard(trades) {
 
     setText(
         "totalPnl",
-        formatMoney(
-            totalPnl
-        )
+        formatMoney(totalPnl)
     );
 
 
@@ -1166,7 +1071,6 @@ function updateDashboard(trades) {
     updateChartState(
         trades
     );
-
 }
 
 
@@ -1174,13 +1078,14 @@ function updateDashboard(trades) {
    RECENT TRADES
    ========================================================= */
 
-function updateRecentTrades(trades) {
+function updateRecentTrades(
+    trades
+) {
 
     const tbody =
         document.getElementById(
             "recentTrades"
         );
-
 
     if (!tbody) {
         return;
@@ -1198,7 +1103,6 @@ function updateRecentTrades(trades) {
         `;
 
         return;
-
     }
 
 
@@ -1274,7 +1178,9 @@ function updateRecentTrades(trades) {
                                 )}
                             </td>
 
-                            <td class="${resultClass}">
+                            <td
+                                class="${resultClass}"
+                            >
                                 ${escapeHtml(
                                     trade.result ||
                                     "-"
@@ -1289,7 +1195,9 @@ function updateRecentTrades(trades) {
                                 ).toFixed(2)}R
                             </td>
 
-                            <td class="${resultClass}">
+                            <td
+                                class="${resultClass}"
+                            >
                                 ${formatMoney(
                                     trade.pnl ||
                                     0
@@ -1298,19 +1206,19 @@ function updateRecentTrades(trades) {
 
                         </tr>
                     `;
-
                 }
             )
             .join("");
-
 }
 
 
 /* =========================================================
-   CHART STATE
+   CHART
    ========================================================= */
 
-function updateChartState(trades) {
+function updateChartState(
+    trades
+) {
 
     const empty =
         document.getElementById(
@@ -1339,7 +1247,6 @@ function updateChartState(trades) {
 
             canvas.style.display =
                 "none";
-
         }
 
     } else {
@@ -1352,11 +1259,8 @@ function updateChartState(trades) {
 
             canvas.style.display =
                 "block";
-
         }
-
     }
-
 }
 
 
@@ -1404,7 +1308,6 @@ function initializeTradeForm() {
 
         date.value =
             localDate;
-
     }
 
 
@@ -1447,7 +1350,6 @@ function initializeTradeForm() {
         "submit",
         saveTrade
     );
-
 }
 
 
@@ -1455,19 +1357,20 @@ function initializeTradeForm() {
    SAVE TRADE
    ========================================================= */
 
-async function saveTrade(event) {
+async function saveTrade(
+    event
+) {
 
     event.preventDefault();
 
 
     if (!getAuthToken()) {
 
-        showAuthScreen();
-
-        showLoginForm();
+        window.location.replace(
+            "/login.html"
+        );
 
         return;
-
     }
 
 
@@ -1492,7 +1395,6 @@ async function saveTrade(event) {
             )
                 ? value
                 : 0;
-
         };
 
 
@@ -1513,7 +1415,6 @@ async function saveTrade(event) {
 
 
     let riskDistance;
-
     let rewardDistance;
 
 
@@ -1532,7 +1433,6 @@ async function saveTrade(event) {
 
         rewardDistance =
             entry - takeProfit;
-
     }
 
 
@@ -1546,7 +1446,6 @@ async function saveTrade(event) {
         );
 
         return;
-
     }
 
 
@@ -1637,70 +1536,48 @@ async function saveTrade(event) {
             riskDistance,
 
         riskDistance:
-            Math.abs(
-                riskDistance
-            ),
+            Math.abs(riskDistance),
 
         rewardDistance:
-            Math.abs(
-                rewardDistance
-            ),
+            Math.abs(rewardDistance),
 
         psychologyBefore:
-            getValue(
-                "psychologyBefore"
-            ),
+            getValue("psychologyBefore"),
 
         psychologyDuring:
-            getValue(
-                "psychologyDuring"
-            ),
+            getValue("psychologyDuring"),
 
         psychologyAfter:
-            getValue(
-                "psychologyAfter"
-            ),
+            getValue("psychologyAfter"),
 
         followedPlan:
-            getValue(
-                "followedPlan"
-            ),
+            getValue("followedPlan"),
 
         tradeQuality:
-            getValue(
-                "tradeQuality"
-            ),
+            getValue("tradeQuality"),
 
         mistake:
-            getValue(
-                "mistake"
-            ),
+            getValue("mistake"),
 
         entryReason:
-            getValue(
-                "entryReason"
-            ).trim(),
+            getValue("entryReason")
+                .trim(),
 
         whatHappened:
-            getValue(
-                "whatHappened"
-            ).trim(),
+            getValue("whatHappened")
+                .trim(),
 
         whatDidWell:
-            getValue(
-                "whatDidWell"
-            ).trim(),
+            getValue("whatDidWell")
+                .trim(),
 
         improvement:
-            getValue(
-                "improvement"
-            ).trim(),
+            getValue("improvement")
+                .trim(),
 
         notes:
-            getValue(
-                "notes"
-            ).trim()
-
+            getValue("notes")
+                .trim()
     };
 
 
@@ -1711,7 +1588,6 @@ async function saveTrade(event) {
         );
 
         return;
-
     }
 
 
@@ -1725,11 +1601,11 @@ async function saveTrade(event) {
 
         if (button) {
 
-            button.disabled = true;
+            button.disabled =
+                true;
 
             button.textContent =
                 "Saving...";
-
         }
 
 
@@ -1751,8 +1627,9 @@ async function saveTrade(event) {
         );
 
 
-        window.location.href =
-            "trades.html";
+        window.location.replace(
+            "/trades.html"
+        );
 
 
     } catch (error) {
@@ -1776,15 +1653,13 @@ async function saveTrade(event) {
 
         if (button) {
 
-            button.disabled = false;
+            button.disabled =
+                false;
 
             button.textContent =
                 "Save Trade";
-
         }
-
     }
-
 }
 
 
@@ -1849,36 +1724,25 @@ function calculateRR() {
     ) {
 
         if (rrOutput) {
-
             rrOutput.textContent =
                 "1 : 0";
-
         }
-
 
         if (riskOutput) {
-
             riskOutput.textContent =
                 "0";
-
         }
-
 
         if (rewardOutput) {
-
             rewardOutput.textContent =
                 "0";
-
         }
 
-
         return;
-
     }
 
 
     let riskDistance;
-
     let rewardDistance;
 
 
@@ -1897,7 +1761,6 @@ function calculateRR() {
 
         rewardDistance =
             entry - target;
-
     }
 
 
@@ -1907,7 +1770,6 @@ function calculateRR() {
             Math.abs(
                 riskDistance
             ).toFixed(5);
-
     }
 
 
@@ -1917,7 +1779,6 @@ function calculateRR() {
             Math.abs(
                 rewardDistance
             ).toFixed(5);
-
     }
 
 
@@ -1927,14 +1788,11 @@ function calculateRR() {
     ) {
 
         if (rrOutput) {
-
             rrOutput.textContent =
                 "Invalid";
-
         }
 
         return;
-
     }
 
 
@@ -1947,9 +1805,7 @@ function calculateRR() {
 
         rrOutput.textContent =
             `1 : ${rr.toFixed(2)}`;
-
     }
-
 }
 
 
@@ -1957,23 +1813,27 @@ function calculateRR() {
    HELPERS
    ========================================================= */
 
-function setText(id, value) {
+function setText(
+    id,
+    value
+) {
 
     const element =
-        document.getElementById(id);
+        document.getElementById(
+            id
+        );
 
 
     if (element) {
-
         element.textContent =
             value;
-
     }
-
 }
 
 
-function formatMoney(value) {
+function formatMoney(
+    value
+) {
 
     return new Intl.NumberFormat(
         "en-US",
@@ -1986,11 +1846,12 @@ function formatMoney(value) {
             value || 0
         )
     );
-
 }
 
 
-function formatDate(value) {
+function formatDate(
+    value
+) {
 
     if (!value) {
         return "-";
@@ -2006,9 +1867,7 @@ function formatDate(value) {
             date.getTime()
         )
     ) {
-
         return value;
-
     }
 
 
@@ -2020,11 +1879,12 @@ function formatDate(value) {
             year: "numeric"
         }
     );
-
 }
 
 
-function escapeHtml(value) {
+function escapeHtml(
+    value
+) {
 
     return String(value)
         .replaceAll(
@@ -2047,18 +1907,14 @@ function escapeHtml(value) {
             "'",
             "&#039;"
         );
-
 }
 
 
 /* =========================================================
-   START
+   START APP
    ========================================================= */
 
-document.addEventListener(
-    "DOMContentLoaded",
-    initializeApp
-);
+initializeAuth();
 
 
 /* =========================================================
