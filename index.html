@@ -1,295 +1,52 @@
-<!DOCTYPE html><html lang="en"><head>
-    <meta charset="UTF-8"><meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
->
+<!DOCTYPE html>
+<html lang="en">
 
-<title>Sage Journal</title>
+<head>
+    <meta charset="UTF-8">
 
-<link
-    rel="stylesheet"
-    href="css/style.css"
->
-
-<style>
-    html.auth-loading,
-    body.auth-loading {
-        visibility: hidden;
-    }
-
-    .auth-screen {
-        min-height: 100vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 24px;
-    }
-
-    .auth-card {
-        width: 100%;
-        max-width: 440px;
-    }
-
-    .auth-mode {
-        display: none;
-    }
-
-    .auth-mode.active {
-        display: block;
-    }
-
-    .auth-switch button {
-        background: none;
-        border: 0;
-        padding: 0;
-        cursor: pointer;
-        font: inherit;
-        color: inherit;
-    }
-
-    .auth-error {
-        min-height: 20px;
-    }
-
-    .dashboard-app {
-        display: none;
-    }
-
-    body.authenticated .auth-screen {
-        display: none;
-    }
-
-    body.authenticated .dashboard-app {
-        display: block;
-    }
-</style>
-
-</head><body class="auth-loading"><!-- =========================================================
-     AUTH SCREEN
-     ========================================================= --><main
-    id="authScreen"
-    class="auth-page auth-screen"
-><div class="auth-card">
-
-    <div class="auth-brand">
-
-        <div class="brand-mark">
-            S
-        </div>
-
-        <div>
-            <h1>Sage</h1>
-            <span>Journal</span>
-        </div>
-
-    </div>
-
-
-    <!-- REGISTER -->
-
-    <section
-        id="registerMode"
-        class="auth-mode active"
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
     >
 
-        <div class="auth-heading">
+    <title>Sage Journal — Dashboard</title>
 
-            <h2>
-                Create your account
-            </h2>
-
-            <p>
-                Start building your trading journal.
-            </p>
-
-        </div>
-
-
-        <form id="registerForm">
-
-            <div class="form-group">
-
-                <label for="registerName">
-                    Display name
-                </label>
-
-                <input
-                    type="text"
-                    id="registerName"
-                    placeholder="Your name"
-                    autocomplete="name"
-                    required
-                >
-
-            </div>
-
-
-            <div class="form-group">
-
-                <label for="registerEmail">
-                    Email
-                </label>
-
-                <input
-                    type="email"
-                    id="registerEmail"
-                    placeholder="you@example.com"
-                    autocomplete="email"
-                    required
-                >
-
-            </div>
-
-
-            <div class="form-group">
-
-                <label for="registerPassword">
-                    Password
-                </label>
-
-                <input
-                    type="password"
-                    id="registerPassword"
-                    placeholder="At least 8 characters"
-                    autocomplete="new-password"
-                    minlength="8"
-                    required
-                >
-
-            </div>
-
-
-            <p
-                id="registerError"
-                class="auth-error"
-            ></p>
-
-
-            <button
-                type="submit"
-                class="primary-btn auth-submit"
-            >
-                Create Account & Continue
-            </button>
-
-        </form>
-
-
-        <div class="auth-switch">
-
-            <span>
-                Already have an account?
-            </span>
-
-            <button
-                type="button"
-                id="showLogin"
-            >
-                Login
-            </button>
-
-        </div>
-
-    </section>
-
-
-    <!-- LOGIN -->
-
-    <section
-        id="loginMode"
-        class="auth-mode"
+    <link
+        rel="stylesheet"
+        href="./css/style.css"
     >
 
-        <div class="auth-heading">
+    <style>
+        html.auth-checking,
+        body.auth-loading {
+            visibility: hidden;
+        }
 
-            <h2>
-                Welcome back
-            </h2>
+        body.authenticated {
+            visibility: visible;
+        }
+    </style>
 
-            <p>
-                Login to continue to your trading journal.
-            </p>
+    <script>
+        (function () {
+            const token =
+                localStorage.getItem("sageJournalToken");
 
-        </div>
+            if (!token) {
+                window.location.replace("./login.html");
+                return;
+            }
 
+            document.documentElement.classList.add(
+                "auth-checking"
+            );
+        })();
+    </script>
+</head>
 
-        <form id="loginForm">
+<body class="auth-loading">
 
-            <div class="form-group">
-
-                <label for="loginEmail">
-                    Email
-                </label>
-
-                <input
-                    type="email"
-                    id="loginEmail"
-                    placeholder="you@example.com"
-                    autocomplete="email"
-                    required
-                >
-
-            </div>
-
-
-            <div class="form-group">
-
-                <label for="loginPassword">
-                    Password
-                </label>
-
-                <input
-                    type="password"
-                    id="loginPassword"
-                    placeholder="Enter your password"
-                    autocomplete="current-password"
-                    required
-                >
-
-            </div>
-
-
-            <p
-                id="loginError"
-                class="auth-error"
-            ></p>
-
-
-            <button
-                type="submit"
-                class="primary-btn auth-submit"
-            >
-                Login
-            </button>
-
-        </form>
-
-
-        <div class="auth-switch">
-
-            <span>
-                Don't have an account?
-            </span>
-
-            <button
-                type="button"
-                id="showRegister"
-            >
-                Create account
-            </button>
-
-        </div>
-
-    </section>
-
-</div>
-
-</main><!-- =========================================================
-     DASHBOARD
-     ========================================================= --><div
-    id="dashboardApp"
-    class="dashboard-app"
-><div class="app">
+<div class="app">
 
     <aside class="sidebar">
 
@@ -306,11 +63,10 @@
 
         </div>
 
-
         <nav>
 
             <a
-                href="index.html"
+                href="./index.html"
                 class="nav-item active"
             >
                 <span>⌂</span>
@@ -318,7 +74,7 @@
             </a>
 
             <a
-                href="calendar.html"
+                href="./calendar.html"
                 class="nav-item"
             >
                 <span>□</span>
@@ -326,7 +82,7 @@
             </a>
 
             <a
-                href="trades.html"
+                href="./trades.html"
                 class="nav-item"
             >
                 <span>↗</span>
@@ -334,7 +90,7 @@
             </a>
 
             <a
-                href="add-trade.html"
+                href="./add-trade.html"
                 class="nav-item"
             >
                 <span>＋</span>
@@ -342,7 +98,7 @@
             </a>
 
             <a
-                href="analytics.html"
+                href="./analytics.html"
                 class="nav-item"
             >
                 <span>◫</span>
@@ -350,7 +106,6 @@
             </a>
 
         </nav>
-
 
         <div class="sidebar-bottom">
 
@@ -377,7 +132,6 @@
 
             </div>
 
-
             <button
                 id="logoutButton"
                 class="logout-button"
@@ -403,7 +157,6 @@
                 ☰
             </button>
 
-
             <div>
 
                 <p class="eyebrow">
@@ -416,9 +169,8 @@
 
             </div>
 
-
             <a
-                href="add-trade.html"
+                href="./add-trade.html"
                 class="primary-btn"
             >
                 + Add Trade
@@ -513,17 +265,9 @@
 
                         <select id="equityRange">
 
-                            <option>
-                                All Time
-                            </option>
-
-                            <option>
-                                This Month
-                            </option>
-
-                            <option>
-                                This Week
-                            </option>
+                            <option>All Time</option>
+                            <option>This Month</option>
+                            <option>This Week</option>
 
                         </select>
 
@@ -662,9 +406,8 @@
 
                     </div>
 
-
                     <a
-                        href="trades.html"
+                        href="./trades.html"
                         class="text-btn"
                     >
                         View all →
@@ -693,7 +436,6 @@
 
                         </thead>
 
-
                         <tbody id="recentTrades">
 
                             <tr class="empty-row">
@@ -718,5 +460,7 @@
 
 </div>
 
-</div><script src="js/app.js"></script></body>
+<script src="./js/app.js"></script>
+
+</body>
 </html>
