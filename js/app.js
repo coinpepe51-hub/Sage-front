@@ -3,7 +3,7 @@
    FRONTEND APP
    ========================================================= */
 
-const API_BASE_URL = "https://sage-journal.netlify.app/api";
+const API_BASE_URL = "https://sage-z7bo.onrender.com/api";
 
 /* =========================================================
    AUTH STORAGE
