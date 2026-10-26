@@ -10,7 +10,7 @@
         content="width=device-width, initial-scale=1.0"
     >
 
-    <title>Sage Journal — Dashboard</title>
+    <title>Sage Journal — Login</title>
 
     <link
         rel="stylesheet"
@@ -21,13 +21,11 @@
 
 <body>
 
-<div class="app" id="dashboard">
+<div class="auth-page">
 
-    <!-- SIDEBAR -->
+    <div class="auth-card">
 
-    <aside class="sidebar">
-
-        <div class="brand">
+        <div class="brand auth-brand">
 
             <div class="brand-mark">
                 S
@@ -41,447 +39,74 @@
         </div>
 
 
-        <nav class="sidebar-nav">
+        <div class="auth-heading">
 
-            <a
-                href="index.html"
-                class="nav-item"
-            >
-                <span class="nav-icon">⌂</span>
-                <span>Dashboard</span>
-            </a>
+            <h1>Welcome back</h1>
 
+            <p>
+                Log in to your trading journal.
+            </p>
 
-            <a
-                href="calendar.html"
-                class="nav-item"
-            >
-                <span class="nav-icon">□</span>
-                <span>Calendar</span>
-            </a>
+        </div>
 
 
-            <a
-                href="trades.html"
-                class="nav-item"
-            >
-                <span class="nav-icon">↗</span>
-                <span>Trades</span>
-            </a>
+        <form id="loginForm">
 
+            <div class="form-group">
 
-            <a
-                href="add-trade.html"
-                class="nav-item"
-            >
-                <span class="nav-icon">＋</span>
-                <span>Add Trade</span>
-            </a>
+                <label>Email</label>
 
-
-            <a
-                href="analytics.html"
-                class="nav-item"
-            >
-                <span class="nav-icon">◫</span>
-                <span>Analytics</span>
-            </a>
-
-        </nav>
-
-
-        <div class="sidebar-bottom">
-
-            <div class="account-mini">
-
-                <div
-                    class="avatar"
-                    data-user-avatar
+                <input
+                    type="email"
+                    id="loginEmail"
+                    placeholder="you@example.com"
+                    required
                 >
-                    S
-                </div>
 
-                <div class="account-info">
+            </div>
 
-                    <strong data-user-name>
-                        Trader
-                    </strong>
 
-                    <small data-user-email>
-                        Demo Account
-                    </small>
+            <div class="form-group">
 
-                </div>
+                <label>Password</label>
+
+                <input
+                    type="password"
+                    id="loginPassword"
+                    placeholder="Your password"
+                    required
+                >
 
             </div>
 
 
             <button
-                id="logoutButton"
-                class="logout-button"
-                type="button"
+                type="submit"
+                class="primary-btn auth-button"
             >
-                Logout
+                Login
             </button>
 
-        </div>
 
-    </aside>
+            <p
+                id="loginError"
+                class="auth-error"
+            ></p>
 
-
-    <!-- MAIN -->
-
-    <main class="main">
-
-        <header class="topbar">
-
-            <div class="topbar-left">
-
-                <button
-                    class="mobile-menu"
-                    id="mobileMenu"
-                    type="button"
-                    aria-label="Open menu"
-                >
-                    ☰
-                </button>
+        </form>
 
 
-                <div>
+        <p class="auth-switch">
 
-                    <p class="eyebrow">
-                        TRADING JOURNAL
-                    </p>
+            Don't have an account?
 
-                    <h1>
-                        Dashboard
-                    </h1>
-
-                </div>
-
-            </div>
-
-
-            <a
-                href="add-trade.html"
-                class="primary-btn"
-            >
-                + Add Trade
+            <a href="register.html">
+                Create one
             </a>
 
-        </header>
+        </p>
 
-
-        <!-- STATS -->
-
-        <section class="stats-grid">
-
-            <div class="stat-card">
-
-                <span>
-                    Total P&L
-                </span>
-
-                <strong id="totalPnl">
-                    $0.00
-                </strong>
-
-                <small class="positive">
-                    Overall
-                </small>
-
-            </div>
-
-
-            <div class="stat-card">
-
-                <span>
-                    Win Rate
-                </span>
-
-                <strong id="winRate">
-                    0%
-                </strong>
-
-                <small>
-                    All trades
-                </small>
-
-            </div>
-
-
-            <div class="stat-card">
-
-                <span>
-                    Profit Factor
-                </span>
-
-                <strong id="profitFactor">
-                    0.00
-                </strong>
-
-                <small>
-                    Overall
-                </small>
-
-            </div>
-
-
-            <div class="stat-card">
-
-                <span>
-                    Total Trades
-                </span>
-
-                <strong id="totalTrades">
-                    0
-                </strong>
-
-                <small>
-                    This account
-                </small>
-
-            </div>
-
-        </section>
-
-
-        <!-- EQUITY -->
-
-        <section class="dashboard-grid">
-
-            <div class="panel equity-panel">
-
-                <div class="panel-header">
-
-                    <div>
-
-                        <h3>
-                            Equity Curve
-                        </h3>
-
-                        <p>
-                            Your account performance over time
-                        </p>
-
-                    </div>
-
-
-                    <select id="equityRange">
-
-                        <option>
-                            All Time
-                        </option>
-
-                        <option>
-                            This Month
-                        </option>
-
-                        <option>
-                            This Week
-                        </option>
-
-                    </select>
-
-                </div>
-
-
-                <div class="chart-container">
-
-                    <canvas
-                        id="equityChart"
-                    ></canvas>
-
-
-                    <div
-                        class="empty-chart"
-                        id="emptyChart"
-                    >
-
-                        <span>
-                            ⌁
-                        </span>
-
-                        <p>
-                            No trades yet
-                        </p>
-
-                        <small>
-                            Add your first trade to start tracking performance.
-                        </small>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-
-            <!-- QUICK STATS -->
-
-            <div class="panel">
-
-                <div class="panel-header">
-
-                    <div>
-
-                        <h3>
-                            Quick Stats
-                        </h3>
-
-                        <p>
-                            Current performance
-                        </p>
-
-                    </div>
-
-                </div>
-
-
-                <div class="quick-stat">
-
-                    <span>
-                        Winning Trades
-                    </span>
-
-                    <strong id="winningTrades">
-                        0
-                    </strong>
-
-                </div>
-
-
-                <div class="quick-stat">
-
-                    <span>
-                        Losing Trades
-                    </span>
-
-                    <strong id="losingTrades">
-                        0
-                    </strong>
-
-                </div>
-
-
-                <div class="quick-stat">
-
-                    <span>
-                        Average R
-                    </span>
-
-                    <strong id="averageR">
-                        0R
-                    </strong>
-
-                </div>
-
-
-                <div class="quick-stat">
-
-                    <span>
-                        Best Trade
-                    </span>
-
-                    <strong id="bestTrade">
-                        0R
-                    </strong>
-
-                </div>
-
-
-                <div class="quick-stat">
-
-                    <span>
-                        Worst Trade
-                    </span>
-
-                    <strong id="worstTrade">
-                        0R
-                    </strong>
-
-                </div>
-
-            </div>
-
-        </section>
-
-
-        <!-- RECENT TRADES -->
-
-        <section class="panel recent-panel">
-
-            <div class="panel-header">
-
-                <div>
-
-                    <h3>
-                        Recent Trades
-                    </h3>
-
-                    <p>
-                        Your latest journal entries
-                    </p>
-
-                </div>
-
-
-                <a
-                    href="trades.html"
-                    class="text-btn"
-                >
-                    View all →
-                </a>
-
-            </div>
-
-
-            <div class="table-wrapper">
-
-                <table>
-
-                    <thead>
-
-                        <tr>
-
-                            <th>Date</th>
-
-                            <th>Pair</th>
-
-                            <th>Direction</th>
-
-                            <th>Setup</th>
-
-                            <th>Result</th>
-
-                            <th>R</th>
-
-                            <th>P&L</th>
-
-                        </tr>
-
-                    </thead>
-
-
-                    <tbody id="recentTrades">
-
-                        <tr class="empty-row">
-
-                            <td colspan="7">
-                                No trades recorded yet.
-                            </td>
-
-                        </tr>
-
-                    </tbody>
-
-                </table>
-
-            </div>
-
-        </section>
-
-    </main>
+    </div>
 
 </div>
 
