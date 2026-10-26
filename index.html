@@ -1,520 +1,524 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">
 
-<head>
-    <meta charset="UTF-8">
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
+<meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+>
 
-    <title>Sage Journal — Dashboard</title>
+<title>Sage Journal — Dashboard</title>
 
-    <link
-        rel="stylesheet"
-        href="css/style.css"
-    >
+<link
+    rel="stylesheet"
+    href="/css/style.css"
+>
 
-    <style>
-        html.auth-redirecting body,
-        body.auth-loading {
-            visibility: hidden;
+<!--
+    IMPORTANT:
+    Hide the dashboard immediately.
+    This prevents index.html from flashing
+    before authentication is checked.
+-->
+<style>
+    html.auth-checking,
+    body.auth-loading {
+        visibility: hidden;
+    }
+
+    body.authenticated {
+        visibility: visible;
+    }
+</style>
+
+<!--
+    INSTANT AUTH CHECK
+
+    index.html is the Netlify root page.
+    Do this before the dashboard is displayed.
+-->
+<script>
+    (function () {
+
+        const token =
+            localStorage.getItem("sageJournalToken");
+
+        if (!token) {
+
+            window.location.replace(
+                "/login.html"
+            );
+
+            return;
+
         }
 
-        body.authenticated {
-            visibility: visible;
-        }
-    </style>
-</head>
+        document.documentElement.classList.add(
+            "auth-checking"
+        );
 
-<body class="auth-loading">
+    })();
+</script>
 
-<div class="app">
+</head><body class="auth-loading"><div class="app"><!-- SIDEBAR -->
+<aside class="sidebar">
 
-    <!-- SIDEBAR -->
-    <aside class="sidebar">
+    <div class="brand">
 
-        <div class="brand">
+        <div class="brand-mark">
+            S
+        </div>
 
-            <div class="brand-mark">
+        <div>
+            <h2>Sage</h2>
+            <span>Journal</span>
+        </div>
+
+    </div>
+
+
+    <nav>
+
+        <a
+            href="/index.html"
+            class="nav-item active"
+        >
+            <span>⌂</span>
+            Dashboard
+        </a>
+
+        <a
+            href="/calendar.html"
+            class="nav-item"
+        >
+            <span>□</span>
+            Calendar
+        </a>
+
+        <a
+            href="/trades.html"
+            class="nav-item"
+        >
+            <span>↗</span>
+            Trades
+        </a>
+
+        <a
+            href="/add-trade.html"
+            class="nav-item"
+        >
+            <span>＋</span>
+            Add Trade
+        </a>
+
+        <a
+            href="/analytics.html"
+            class="nav-item"
+        >
+            <span>◫</span>
+            Analytics
+        </a>
+
+    </nav>
+
+
+    <div class="sidebar-bottom">
+
+        <div class="account-mini">
+
+            <div
+                class="avatar"
+                data-user-avatar
+            >
                 S
             </div>
 
             <div>
-                <h2>Sage</h2>
-                <span>Journal</span>
-            </div>
 
-        </div>
-
-
-        <nav>
-
-            <a
-                href="index.html"
-                class="nav-item active"
-            >
-                <span>⌂</span>
-                Dashboard
-            </a>
-
-            <a
-                href="calendar.html"
-                class="nav-item"
-            >
-                <span>□</span>
-                Calendar
-            </a>
-
-            <a
-                href="trades.html"
-                class="nav-item"
-            >
-                <span>↗</span>
-                Trades
-            </a>
-
-            <a
-                href="add-trade.html"
-                class="nav-item"
-            >
-                <span>＋</span>
-                Add Trade
-            </a>
-
-            <a
-                href="analytics.html"
-                class="nav-item"
-            >
-                <span>◫</span>
-                Analytics
-            </a>
-
-        </nav>
-
-
-        <div class="sidebar-bottom">
-
-            <div class="account-mini">
-
-                <div
-                    class="avatar"
-                    data-user-avatar
+                <strong
+                    data-user-name
                 >
-                    S
-                </div>
+                    Trader
+                </strong>
 
-                <div>
-
-                    <strong
-                        data-user-name
-                    >
-                        Trader
-                    </strong>
-
-                    <small
-                        data-user-email
-                    >
-                        Loading...
-                    </small>
-
-                </div>
+                <small
+                    data-user-email
+                >
+                    Loading...
+                </small>
 
             </div>
-
-
-            <button
-                id="logoutButton"
-                class="logout-button"
-                type="button"
-            >
-                Logout
-            </button>
 
         </div>
 
-    </aside>
+
+        <button
+            id="logoutButton"
+            class="logout-button"
+            type="button"
+        >
+            Logout
+        </button>
+
+    </div>
+
+</aside>
 
 
-    <!-- MAIN -->
-    <main class="main">
+<!-- MAIN -->
+<main class="main">
 
-        <!-- TOPBAR -->
-        <header class="topbar">
+    <header class="topbar">
 
-            <button
-                class="mobile-menu"
-                id="mobileMenu"
-                type="button"
-            >
-                ☰
-            </button>
+        <button
+            class="mobile-menu"
+            id="mobileMenu"
+            type="button"
+        >
+            ☰
+        </button>
 
 
-            <div>
+        <div>
 
-                <p class="eyebrow">
-                    TRADING JOURNAL
-                </p>
+            <p class="eyebrow">
+                TRADING JOURNAL
+            </p>
 
-                <h1>
-                    Dashboard
-                </h1>
+            <h1>
+                Dashboard
+            </h1>
+
+        </div>
+
+
+        <a
+            href="/add-trade.html"
+            class="primary-btn"
+        >
+            + Add Trade
+        </a>
+
+    </header>
+
+
+    <div id="dashboard">
+
+        <section class="stats-grid">
+
+            <div class="stat-card">
+
+                <span>
+                    Total P&L
+                </span>
+
+                <strong id="totalPnl">
+                    $0.00
+                </strong>
+
+                <small class="positive">
+                    +0.00%
+                </small>
 
             </div>
 
 
-            <a
-                href="add-trade.html"
-                class="primary-btn"
-            >
-                + Add Trade
-            </a>
+            <div class="stat-card">
 
-        </header>
+                <span>
+                    Win Rate
+                </span>
 
+                <strong id="winRate">
+                    0%
+                </strong>
 
-        <!-- DASHBOARD CONTENT -->
-        <div id="dashboard">
+                <small>
+                    0 trades
+                </small>
 
-            <!-- STATS -->
-            <section class="stats-grid">
+            </div>
 
-                <div class="stat-card">
 
-                    <span>
-                        Total P&L
-                    </span>
+            <div class="stat-card">
 
-                    <strong id="totalPnl">
-                        $0.00
-                    </strong>
+                <span>
+                    Profit Factor
+                </span>
 
-                    <small class="positive">
-                        +0.00%
-                    </small>
+                <strong id="profitFactor">
+                    0.00
+                </strong>
 
-                </div>
+                <small>
+                    Overall
+                </small>
 
+            </div>
 
-                <div class="stat-card">
 
-                    <span>
-                        Win Rate
-                    </span>
+            <div class="stat-card">
 
-                    <strong id="winRate">
-                        0%
-                    </strong>
+                <span>
+                    Total Trades
+                </span>
 
-                    <small>
-                        0 trades
-                    </small>
+                <strong id="totalTrades">
+                    0
+                </strong>
 
-                </div>
+                <small>
+                    This account
+                </small>
 
+            </div>
 
-                <div class="stat-card">
+        </section>
 
-                    <span>
-                        Profit Factor
-                    </span>
 
-                    <strong id="profitFactor">
-                        0.00
-                    </strong>
+        <section class="dashboard-grid">
 
-                    <small>
-                        Overall
-                    </small>
-
-                </div>
-
-
-                <div class="stat-card">
-
-                    <span>
-                        Total Trades
-                    </span>
-
-                    <strong id="totalTrades">
-                        0
-                    </strong>
-
-                    <small>
-                        This account
-                    </small>
-
-                </div>
-
-            </section>
-
-
-            <!-- DASHBOARD GRID -->
-            <section class="dashboard-grid">
-
-                <!-- EQUITY -->
-                <div class="panel equity-panel">
-
-                    <div class="panel-header">
-
-                        <div>
-
-                            <h3>
-                                Equity Curve
-                            </h3>
-
-                            <p>
-                                Your account performance over time
-                            </p>
-
-                        </div>
-
-
-                        <select id="equityRange">
-
-                            <option>
-                                All Time
-                            </option>
-
-                            <option>
-                                This Month
-                            </option>
-
-                            <option>
-                                This Week
-                            </option>
-
-                        </select>
-
-                    </div>
-
-
-                    <div class="chart-container">
-
-                        <canvas
-                            id="equityChart"
-                        ></canvas>
-
-
-                        <div
-                            class="empty-chart"
-                            id="emptyChart"
-                        >
-
-                            <span>
-                                ⌁
-                            </span>
-
-                            <p>
-                                No trades yet
-                            </p>
-
-                            <small>
-                                Add your first trade to start tracking performance.
-                            </small>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-
-                <!-- QUICK STATS -->
-                <div class="panel">
-
-                    <div class="panel-header">
-
-                        <div>
-
-                            <h3>
-                                Quick Stats
-                            </h3>
-
-                            <p>
-                                Current performance
-                            </p>
-
-                        </div>
-
-                    </div>
-
-
-                    <div class="quick-stat">
-
-                        <span>
-                            Winning Trades
-                        </span>
-
-                        <strong
-                            id="winningTrades"
-                        >
-                            0
-                        </strong>
-
-                    </div>
-
-
-                    <div class="quick-stat">
-
-                        <span>
-                            Losing Trades
-                        </span>
-
-                        <strong
-                            id="losingTrades"
-                        >
-                            0
-                        </strong>
-
-                    </div>
-
-
-                    <div class="quick-stat">
-
-                        <span>
-                            Average R
-                        </span>
-
-                        <strong
-                            id="averageR"
-                        >
-                            0R
-                        </strong>
-
-                    </div>
-
-
-                    <div class="quick-stat">
-
-                        <span>
-                            Best Trade
-                        </span>
-
-                        <strong
-                            id="bestTrade"
-                        >
-                            0R
-                        </strong>
-
-                    </div>
-
-
-                    <div class="quick-stat">
-
-                        <span>
-                            Worst Trade
-                        </span>
-
-                        <strong
-                            id="worstTrade"
-                        >
-                            0R
-                        </strong>
-
-                    </div>
-
-                </div>
-
-            </section>
-
-
-            <!-- RECENT TRADES -->
-            <section class="panel recent-panel">
+            <div class="panel equity-panel">
 
                 <div class="panel-header">
 
                     <div>
 
                         <h3>
-                            Recent Trades
+                            Equity Curve
                         </h3>
 
                         <p>
-                            Your latest journal entries
+                            Your account performance over time
                         </p>
 
                     </div>
 
 
-                    <a
-                        href="trades.html"
-                        class="text-btn"
+                    <select id="equityRange">
+
+                        <option>
+                            All Time
+                        </option>
+
+                        <option>
+                            This Month
+                        </option>
+
+                        <option>
+                            This Week
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <div class="chart-container">
+
+                    <canvas
+                        id="equityChart"
+                    ></canvas>
+
+
+                    <div
+                        class="empty-chart"
+                        id="emptyChart"
                     >
-                        View all →
-                    </a>
+
+                        <span>
+                            ⌁
+                        </span>
+
+                        <p>
+                            No trades yet
+                        </p>
+
+                        <small>
+                            Add your first trade to start tracking performance.
+                        </small>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="panel">
+
+                <div class="panel-header">
+
+                    <div>
+
+                        <h3>
+                            Quick Stats
+                        </h3>
+
+                        <p>
+                            Current performance
+                        </p>
+
+                    </div>
 
                 </div>
 
 
-                <div class="table-wrapper">
+                <div class="quick-stat">
 
-                    <table>
+                    <span>
+                        Winning Trades
+                    </span>
 
-                        <thead>
-
-                            <tr>
-
-                                <th>
-                                    Date
-                                </th>
-
-                                <th>
-                                    Pair
-                                </th>
-
-                                <th>
-                                    Direction
-                                </th>
-
-                                <th>
-                                    Setup
-                                </th>
-
-                                <th>
-                                    Result
-                                </th>
-
-                                <th>
-                                    R
-                                </th>
-
-                                <th>
-                                    P&L
-                                </th>
-
-                            </tr>
-
-                        </thead>
-
-
-                        <tbody id="recentTrades">
-
-                            <tr class="empty-row">
-
-                                <td colspan="7">
-                                    No trades recorded yet.
-                                </td>
-
-                            </tr>
-
-                        </tbody>
-
-                    </table>
+                    <strong id="winningTrades">
+                        0
+                    </strong>
 
                 </div>
 
-            </section>
 
-        </div>
+                <div class="quick-stat">
 
-    </main>
+                    <span>
+                        Losing Trades
+                    </span>
 
-</div>
+                    <strong id="losingTrades">
+                        0
+                    </strong>
+
+                </div>
 
 
-<script src="js/app.js"></script>
+                <div class="quick-stat">
 
-</body>
-</html>
+                    <span>
+                        Average R
+                    </span>
+
+                    <strong id="averageR">
+                        0R
+                    </strong>
+
+                </div>
+
+
+                <div class="quick-stat">
+
+                    <span>
+                        Best Trade
+                    </span>
+
+                    <strong id="bestTrade">
+                        0R
+                    </strong>
+
+                </div>
+
+
+                <div class="quick-stat">
+
+                    <span>
+                        Worst Trade
+                    </span>
+
+                    <strong id="worstTrade">
+                        0R
+                    </strong>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <section class="panel recent-panel">
+
+            <div class="panel-header">
+
+                <div>
+
+                    <h3>
+                        Recent Trades
+                    </h3>
+
+                    <p>
+                        Your latest journal entries
+                    </p>
+
+                </div>
+
+
+                <a
+                    href="/trades.html"
+                    class="text-btn"
+                >
+                    View all →
+                </a>
+
+            </div>
+
+
+            <div class="table-wrapper">
+
+                <table>
+
+                    <thead>
+
+                        <tr>
+
+                            <th>
+                                Date
+                            </th>
+
+                            <th>
+                                Pair
+                            </th>
+
+                            <th>
+                                Direction
+                            </th>
+
+                            <th>
+                                Setup
+                            </th>
+
+                            <th>
+                                Result
+                            </th>
+
+                            <th>
+                                R
+                            </th>
+
+                            <th>
+                                P&L
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody id="recentTrades">
+
+                        <tr class="empty-row">
+
+                            <td colspan="7">
+                                No trades recorded yet.
+                            </td>
+
+                        </tr>
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </section>
+
+    </div>
+
+</main>
+
+</div><script src="/js/app.js"></script></body></html>
