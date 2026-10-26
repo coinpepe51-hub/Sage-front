@@ -12,61 +12,56 @@ const API_BASE_URL =
    ========================================================= */
 
 function getAuthToken() {
-    return localStorage.getItem("sageJournalToken");
+    return localStorage.getItem(
+        "sageJournalToken"
+    );
 }
 
 
 function saveAuthToken(token) {
-    localStorage.setItem("sageJournalToken", token);
+
+    localStorage.setItem(
+        "sageJournalToken",
+        token
+    );
+
 }
 
 
 function clearAuth() {
-    localStorage.removeItem("sageJournalToken");
-    localStorage.removeItem("sageJournalUser");
+
+    localStorage.removeItem(
+        "sageJournalToken"
+    );
+
+    localStorage.removeItem(
+        "sageJournalUser"
+    );
+
 }
 
 
 function getCurrentUser() {
+
     try {
+
         return JSON.parse(
-            localStorage.getItem("sageJournalUser")
+            localStorage.getItem(
+                "sageJournalUser"
+            )
         );
+
     } catch {
+
         return null;
+
     }
+
 }
 
 
 /* =========================================================
-   PAGE
-   ========================================================= */
-
-function getCurrentPage() {
-    const path = window.location.pathname;
-
-    const page = path
-        .split("/")
-        .pop();
-
-    return page || "index.html";
-}
-
-
-const currentPage = getCurrentPage();
-
-const publicPages = [
-    "login.html",
-    "register.html"
-];
-
-
-const isPublicPage =
-    publicPages.includes(currentPage);
-
-
-/* =========================================================
-   API REQUEST
+   API
    ========================================================= */
 
 async function apiRequest(
@@ -77,15 +72,24 @@ async function apiRequest(
     const token =
         getAuthToken();
 
+
     const headers = {
-        "Content-Type": "application/json",
+
+        "Content-Type":
+            "application/json",
+
         ...(options.headers || {})
+
     };
 
+
     if (token) {
+
         headers.Authorization =
             `Bearer ${token}`;
+
     }
+
 
     const response =
         await fetch(
@@ -96,56 +100,65 @@ async function apiRequest(
             }
         );
 
+
     let data = null;
 
+
     try {
-        data = await response.json();
+
+        data =
+            await response.json();
+
     } catch {
+
         data = null;
+
     }
 
+
     if (!response.ok) {
-
-        /*
-         * Only clear authentication when an
-         * authenticated API request actually
-         * returns 401.
-         */
-        if (response.status === 401) {
-
-            clearAuth();
-
-            if (!isPublicPage) {
-                window.location.replace(
-                    "login.html"
-                );
-            }
-        }
 
         throw new Error(
             data?.error ||
             data?.message ||
             `Request failed (${response.status})`
         );
+
     }
 
+
     return data;
+
 }
 
 
 /* =========================================================
-   VERIFY AUTHENTICATION
+   AUTH STATE
    ========================================================= */
 
-async function verifyAuthentication() {
+async function checkAuthentication() {
 
     const token =
         getAuthToken();
 
+
+    /*
+     * No token:
+     * show login immediately.
+     */
     if (!token) {
+
+        showAuth();
+
         return false;
+
     }
 
+
+    /*
+     * Token exists.
+     * Verify it against Render/backend.
+     */
     try {
 
         const data =
@@ -153,182 +166,86 @@ async function verifyAuthentication() {
                 "/auth/me"
             );
 
-        if (data?.user) {
 
-            localStorage.setItem(
-                "sageJournalUser",
-                JSON.stringify(
-                    data.user
-                )
+        if (
+            !data?.user
+        ) {
+
+            throw new Error(
+                "Invalid authentication response"
             );
+
         }
+
+
+        localStorage.setItem(
+            "sageJournalUser",
+            JSON.stringify(
+                data.user
+            )
+        );
+
+
+        showApp();
+
 
         return true;
 
-    } catch {
+    } catch (error) {
+
+        console.warn(
+            "Authentication check failed:",
+            error
+        );
+
 
         clearAuth();
 
+        showAuth();
+
+
         return false;
+
     }
+
 }
 
 
 /* =========================================================
-   AUTH STARTUP
+   AUTH UI
    ========================================================= */
 
-async function initializeAuth() {
-
-    /*
-     * -------------------------------------------------------
-     * PUBLIC PAGES
-     * -------------------------------------------------------
-     *
-     * Login and register must NEVER redirect simply because
-     * the page loaded.
-     */
-
-    if (isPublicPage) {
-
-        /*
-         * If there is no token, just initialize
-         * the page normally.
-         */
-        if (!getAuthToken()) {
-
-            initializePublicPage();
-
-            return;
-        }
-
-
-        /*
-         * There is a token.
-         * Check whether it is actually valid.
-         */
-
-        const valid =
-            await verifyAuthentication();
-
-
-        if (valid) {
-
-            window.location.replace(
-                "index.html"
-            );
-
-            return;
-        }
-
-
-        /*
-         * Invalid token was cleared by
-         * verifyAuthentication().
-         *
-         * Stay on the current public page.
-         */
-
-        initializePublicPage();
-
-        return;
-    }
-
-
-    /*
-     * -------------------------------------------------------
-     * PROTECTED PAGES
-     * -------------------------------------------------------
-     */
-
-    document.documentElement.classList.add(
-        "auth-checking"
-    );
-
-    document.body.classList.add(
-        "auth-loading"
-    );
-
-
-    const token =
-        getAuthToken();
-
-
-    /*
-     * No token = definitely logged out.
-     */
-
-    if (!token) {
-
-        window.location.replace(
-            "login.html"
-        );
-
-        return;
-    }
-
-
-    /*
-     * Verify the token before displaying
-     * any protected content.
-     */
-
-    const valid =
-        await verifyAuthentication();
-
-
-    if (!valid) {
-
-        window.location.replace(
-            "login.html"
-        );
-
-        return;
-    }
-
-
-    /*
-     * Authentication confirmed.
-     */
+function showAuth() {
 
     document.body.classList.remove(
         "auth-loading"
     );
 
+    document.body.classList.remove(
+        "show-app"
+    );
+
     document.body.classList.add(
-        "authenticated"
+        "show-auth"
     );
 
-    document.documentElement.classList.remove(
-        "auth-checking"
-    );
-
-
-    initializeProtectedPage();
 }
 
 
-/* =========================================================
-   PUBLIC PAGE INITIALIZATION
-   ========================================================= */
+function showApp() {
 
-function initializePublicPage() {
+    document.body.classList.remove(
+        "auth-loading"
+    );
 
-    if (currentPage === "login.html") {
-        initializeLogin();
-    }
+    document.body.classList.remove(
+        "show-auth"
+    );
 
-    if (currentPage === "register.html") {
-        initializeRegister();
-    }
-}
+    document.body.classList.add(
+        "show-app"
+    );
 
-
-/* =========================================================
-   PROTECTED PAGE INITIALIZATION
-   ========================================================= */
-
-function initializeProtectedPage() {
 
     initializeNavigation();
 
@@ -336,9 +253,167 @@ function initializeProtectedPage() {
 
     initializeLogout();
 
-    initializeTradeForm();
-
     initializeDashboard();
+
+}
+
+
+/* =========================================================
+   SWITCH LOGIN / REGISTER
+   ========================================================= */
+
+function showLoginView() {
+
+    const login =
+        document.getElementById(
+            "loginView"
+        );
+
+    const register =
+        document.getElementById(
+            "registerView"
+        );
+
+
+    if (login) {
+
+        login.classList.add(
+            "active"
+        );
+
+    }
+
+
+    if (register) {
+
+        register.classList.remove(
+            "active"
+        );
+
+    }
+
+
+    const loginError =
+        document.getElementById(
+            "loginError"
+        );
+
+
+    const registerError =
+        document.getElementById(
+            "registerError"
+        );
+
+
+    if (loginError) {
+        loginError.textContent = "";
+    }
+
+
+    if (registerError) {
+        registerError.textContent = "";
+    }
+
+}
+
+
+function showRegisterView() {
+
+    const login =
+        document.getElementById(
+            "loginView"
+        );
+
+    const register =
+        document.getElementById(
+            "registerView"
+        );
+
+
+    if (login) {
+
+        login.classList.remove(
+            "active"
+        );
+
+    }
+
+
+    if (register) {
+
+        register.classList.add(
+            "active"
+        );
+
+    }
+
+
+    const loginError =
+        document.getElementById(
+            "loginError"
+        );
+
+
+    const registerError =
+        document.getElementById(
+            "registerError"
+        );
+
+
+    if (loginError) {
+        loginError.textContent = "";
+    }
+
+
+    if (registerError) {
+        registerError.textContent = "";
+    }
+
+}
+
+
+/* =========================================================
+   AUTH INITIALIZATION
+   ========================================================= */
+
+function initializeAuthUI() {
+
+    const showRegister =
+        document.getElementById(
+            "showRegister"
+        );
+
+
+    const showLogin =
+        document.getElementById(
+            "showLogin"
+        );
+
+
+    if (showRegister) {
+
+        showRegister.addEventListener(
+            "click",
+            showRegisterView
+        );
+
+    }
+
+
+    if (showLogin) {
+
+        showLogin.addEventListener(
+            "click",
+            showLoginView
+        );
+
+    }
+
+
+    initializeLogin();
+
+    initializeRegister();
+
 }
 
 
@@ -352,6 +427,7 @@ function initializeLogin() {
         document.getElementById(
             "loginForm"
         );
+
 
     if (!form) {
         return;
@@ -389,18 +465,26 @@ function initializeLogin() {
 
 
             if (error) {
+
                 error.textContent = "";
+
             }
 
 
-            if (!email || !password) {
+            if (
+                !email ||
+                !password
+            ) {
 
                 if (error) {
+
                     error.textContent =
                         "Enter your email and password.";
+
                 }
 
                 return;
+
             }
 
 
@@ -414,10 +498,12 @@ function initializeLogin() {
 
                 if (button) {
 
-                    button.disabled = true;
+                    button.disabled =
+                        true;
 
                     button.textContent =
                         "Signing in...";
+
                 }
 
 
@@ -441,6 +527,7 @@ function initializeLogin() {
                     throw new Error(
                         "Login succeeded but no authentication token was returned."
                     );
+
                 }
 
 
@@ -457,35 +544,50 @@ function initializeLogin() {
                             data.user
                         )
                     );
+
                 }
 
 
                 /*
-                 * Use the absolute filename.
-                 * This works correctly on Netlify.
+                 * No page redirect.
+                 * Just show the dashboard.
                  */
+                showApp();
 
-                window.location.replace(
-                    "./index.html"
-                );
 
             } catch (err) {
 
+                console.error(
+                    "Login error:",
+                    err
+                );
+
+
                 if (error) {
+
                     error.textContent =
                         err.message;
+
                 }
+
+
+            } finally {
 
                 if (button) {
 
-                    button.disabled = false;
+                    button.disabled =
+                        false;
 
                     button.textContent =
                         "Login";
+
                 }
+
             }
+
         }
     );
+
 }
 
 
@@ -499,6 +601,7 @@ function initializeRegister() {
         document.getElementById(
             "registerForm"
         );
+
 
     if (!form) {
         return;
@@ -545,7 +648,9 @@ function initializeRegister() {
 
 
             if (error) {
+
                 error.textContent = "";
+
             }
 
 
@@ -559,21 +664,27 @@ function initializeRegister() {
 
                     error.textContent =
                         "Please complete all fields.";
+
                 }
 
                 return;
+
             }
 
 
-            if (password.length < 8) {
+            if (
+                password.length < 8
+            ) {
 
                 if (error) {
 
                     error.textContent =
                         "Password must be at least 8 characters.";
+
                 }
 
                 return;
+
             }
 
 
@@ -587,10 +698,12 @@ function initializeRegister() {
 
                 if (button) {
 
-                    button.disabled = true;
+                    button.disabled =
+                        true;
 
                     button.textContent =
                         "Creating account...";
+
                 }
 
 
@@ -602,9 +715,13 @@ function initializeRegister() {
 
                             body:
                                 JSON.stringify({
+
                                     displayName,
+
                                     email,
+
                                     password
+
                                 })
                         }
                     );
@@ -615,9 +732,14 @@ function initializeRegister() {
                     throw new Error(
                         "Account was created but no authentication token was returned."
                     );
+
                 }
 
 
+                /*
+                 * Save the JWT returned by
+                 * the deployed Render backend.
+                 */
                 saveAuthToken(
                     data.token
                 );
@@ -631,35 +753,51 @@ function initializeRegister() {
                             data.user
                         )
                     );
+
                 }
 
 
                 /*
-                 * Registration succeeded.
-                 * Go directly to the protected dashboard.
+                 * No redirect.
+                 * New account immediately enters
+                 * the dashboard.
                  */
+                showApp();
 
-                window.location.replace(
-                    "./index.html"
-                );
 
             } catch (err) {
 
+                console.error(
+                    "Registration error:",
+                    err
+                );
+
+
                 if (error) {
+
                     error.textContent =
                         err.message;
+
                 }
+
+
+            } finally {
 
                 if (button) {
 
-                    button.disabled = false;
+                    button.disabled =
+                        false;
 
                     button.textContent =
                         "Create Account";
+
                 }
+
             }
+
         }
     );
+
 }
 
 
@@ -674,6 +812,7 @@ function initializeNavigation() {
             ".sidebar"
         );
 
+
     const mobileMenu =
         document.getElementById(
             "mobileMenu"
@@ -682,8 +821,13 @@ function initializeNavigation() {
 
     if (
         mobileMenu &&
-        sidebar
+        sidebar &&
+        !mobileMenu.dataset.initialized
     ) {
+
+        mobileMenu.dataset.initialized =
+            "true";
+
 
         mobileMenu.addEventListener(
             "click",
@@ -692,8 +836,10 @@ function initializeNavigation() {
                 sidebar.classList.toggle(
                     "mobile-open"
                 );
+
             }
         );
+
     }
 
 
@@ -711,12 +857,13 @@ function initializeNavigation() {
 
             if (
                 href ===
-                currentPage
+                "index.html"
             ) {
 
                 item.classList.add(
                     "active"
                 );
+
             }
 
 
@@ -727,9 +874,12 @@ function initializeNavigation() {
                     sidebar?.classList.remove(
                         "mobile-open"
                     );
+
                 }
             );
+
         });
+
 }
 
 
@@ -742,6 +892,7 @@ function initializeUser() {
     const user =
         getCurrentUser();
 
+
     if (!user) {
         return;
     }
@@ -750,7 +901,8 @@ function initializeUser() {
     const name =
         user.displayName ||
         user.name ||
-        user.email?.split("@")[0] ||
+        user.email
+            ?.split("@")[0] ||
         "Trader";
 
 
@@ -762,6 +914,7 @@ function initializeUser() {
 
             element.textContent =
                 name;
+
         });
 
 
@@ -773,6 +926,7 @@ function initializeUser() {
 
             element.textContent =
                 user.email || "";
+
         });
 
 
@@ -786,7 +940,9 @@ function initializeUser() {
                 name
                     .charAt(0)
                     .toUpperCase();
+
         });
+
 }
 
 
@@ -801,9 +957,19 @@ function initializeLogout() {
             "logoutButton"
         );
 
-    if (!button) {
+
+    if (
+        !button ||
+        button.dataset.initialized
+    ) {
+
         return;
+
     }
+
+
+    button.dataset.initialized =
+        "true";
 
 
     button.addEventListener(
@@ -812,11 +978,13 @@ function initializeLogout() {
 
             clearAuth();
 
-            window.location.replace(
-                "./login.html"
-            );
+            showAuth();
+
+            showLoginView();
+
         }
     );
+
 }
 
 
@@ -830,6 +998,7 @@ async function initializeDashboard() {
         document.getElementById(
             "dashboard"
         );
+
 
     if (!dashboard) {
         return;
@@ -854,13 +1023,35 @@ async function initializeDashboard() {
             trades
         );
 
+
     } catch (error) {
 
         console.error(
             "Dashboard error:",
             error
         );
+
+        /*
+         * If the deployed backend says the
+         * token is invalid, return to auth.
+         */
+        if (
+            String(
+                error.message || ""
+            ).toLowerCase()
+                .includes(
+                    "token"
+                )
+        ) {
+
+            clearAuth();
+
+            showAuth();
+
+        }
+
     }
+
 }
 
 
@@ -868,7 +1059,9 @@ async function initializeDashboard() {
    DASHBOARD DATA
    ========================================================= */
 
-function updateDashboard(trades) {
+function updateDashboard(
+    trades
+) {
 
     const total =
         trades.length;
@@ -879,7 +1072,8 @@ function updateDashboard(trades) {
             trade =>
                 String(
                     trade.result || ""
-                ).toLowerCase() === "win"
+                ).toLowerCase() ===
+                "win"
         );
 
 
@@ -888,7 +1082,8 @@ function updateDashboard(trades) {
             trade =>
                 String(
                     trade.result || ""
-                ).toLowerCase() === "loss"
+                ).toLowerCase() ===
+                "loss"
         );
 
 
@@ -947,9 +1142,11 @@ function updateDashboard(trades) {
 
     const winRate =
         total
-            ? wins.length /
-              total *
-              100
+            ? (
+                wins.length /
+                total *
+                100
+            )
             : 0;
 
 
@@ -978,7 +1175,8 @@ function updateDashboard(trades) {
     const averageR =
         rValues.length
             ? rValues.reduce(
-                (a, b) => a + b,
+                (a, b) =>
+                    a + b,
                 0
             ) /
             rValues.length
@@ -987,13 +1185,17 @@ function updateDashboard(trades) {
 
     const best =
         rValues.length
-            ? Math.max(...rValues)
+            ? Math.max(
+                ...rValues
+            )
             : 0;
 
 
     const worst =
         rValues.length
-            ? Math.min(...rValues)
+            ? Math.min(
+                ...rValues
+            )
             : 0;
 
 
@@ -1051,9 +1253,15 @@ function updateDashboard(trades) {
     );
 
 
-    updateRecentTrades(trades);
+    updateRecentTrades(
+        trades
+    );
 
-    updateChartState(trades);
+
+    updateChartState(
+        trades
+    );
+
 }
 
 
@@ -1061,12 +1269,15 @@ function updateDashboard(trades) {
    RECENT TRADES
    ========================================================= */
 
-function updateRecentTrades(trades) {
+function updateRecentTrades(
+    trades
+) {
 
     const tbody =
         document.getElementById(
             "recentTrades"
         );
+
 
     if (!tbody) {
         return;
@@ -1084,6 +1295,7 @@ function updateRecentTrades(trades) {
         `;
 
         return;
+
     }
 
 
@@ -1102,91 +1314,111 @@ function updateRecentTrades(trades) {
                         0
                     )
             )
-            .slice(0, 8);
+            .slice(
+                0,
+                8
+            );
 
 
     tbody.innerHTML =
         recent
-            .map(trade => {
+            .map(
+                trade => {
 
-                const result =
-                    String(
-                        trade.result || ""
-                    ).toLowerCase();
-
-
-                const resultClass =
-                    result === "win"
-                        ? "positive"
-                        : result === "loss"
-                            ? "negative"
-                            : "";
+                    const result =
+                        String(
+                            trade.result ||
+                            ""
+                        ).toLowerCase();
 
 
-                return `
-                    <tr>
+                    const resultClass =
+                        result === "win"
+                            ? "positive"
+                            : result === "loss"
+                                ? "negative"
+                                : "";
 
-                        <td>
-                            ${formatDate(
-                                trade.tradeDate ||
-                                trade.trade_date
-                            )}
-                        </td>
 
-                        <td>
-                            <strong>
-                                ${escapeHtml(
-                                    trade.pair || "-"
+                    return `
+
+                        <tr>
+
+                            <td>
+                                ${formatDate(
+                                    trade.tradeDate ||
+                                    trade.trade_date
                                 )}
-                            </strong>
-                        </td>
+                            </td>
 
-                        <td>
-                            ${escapeHtml(
-                                trade.direction || "-"
-                            )}
-                        </td>
+                            <td>
+                                <strong>
+                                    ${escapeHtml(
+                                        trade.pair ||
+                                        "-"
+                                    )}
+                                </strong>
+                            </td>
 
-                        <td>
-                            ${escapeHtml(
-                                trade.setup ||
-                                trade.strategy ||
-                                "-"
-                            )}
-                        </td>
+                            <td>
+                                ${escapeHtml(
+                                    trade.direction ||
+                                    "-"
+                                )}
+                            </td>
 
-                        <td class="${resultClass}">
-                            ${escapeHtml(
-                                trade.result || "-"
-                            )}
-                        </td>
+                            <td>
+                                ${escapeHtml(
+                                    trade.setup ||
+                                    trade.strategy ||
+                                    "-"
+                                )}
+                            </td>
 
-                        <td>
-                            ${Number(
-                                trade.rResult ??
-                                trade.r_result ??
-                                0
-                            ).toFixed(2)}R
-                        </td>
+                            <td
+                                class="${resultClass}"
+                            >
+                                ${escapeHtml(
+                                    trade.result ||
+                                    "-"
+                                )}
+                            </td>
 
-                        <td class="${resultClass}">
-                            ${formatMoney(
-                                trade.pnl || 0
-                            )}
-                        </td>
+                            <td>
+                                ${Number(
+                                    trade.rResult ??
+                                    trade.r_result ??
+                                    0
+                                ).toFixed(2)}R
+                            </td>
 
-                    </tr>
-                `;
-            })
+                            <td
+                                class="${resultClass}"
+                            >
+                                ${formatMoney(
+                                    trade.pnl ||
+                                    0
+                                )}
+                            </td>
+
+                        </tr>
+
+                    `;
+
+                }
+            )
             .join("");
+
 }
 
 
 /* =========================================================
-   CHART
+   CHART STATE
    ========================================================= */
 
-function updateChartState(trades) {
+function updateChartState(
+    trades
+) {
 
     const empty =
         document.getElementById(
@@ -1207,535 +1439,32 @@ function updateChartState(trades) {
 
     if (!trades.length) {
 
-        empty.style.display = "flex";
+        empty.style.display =
+            "flex";
+
 
         if (canvas) {
-            canvas.style.display = "none";
+
+            canvas.style.display =
+                "none";
+
         }
 
     } else {
 
-        empty.style.display = "none";
+        empty.style.display =
+            "none";
+
 
         if (canvas) {
-            canvas.style.display = "block";
-        }
-    }
-}
 
+            canvas.style.display =
+                "block";
 
-/* =========================================================
-   TRADE FORM
-   ========================================================= */
-
-function initializeTradeForm() {
-
-    const form =
-        document.getElementById(
-            "tradeForm"
-        );
-
-    if (!form) {
-        return;
-    }
-
-
-    const date =
-        document.getElementById(
-            "tradeDate"
-        );
-
-
-    if (
-        date &&
-        !date.value
-    ) {
-
-        const now = new Date();
-
-        const localDate =
-            new Date(
-                now.getTime() -
-                now.getTimezoneOffset() *
-                60000
-            )
-                .toISOString()
-                .split("T")[0];
-
-
-        date.value =
-            localDate;
-    }
-
-
-    [
-        "entry",
-        "stopLoss",
-        "takeProfit",
-        "direction"
-    ].forEach(id => {
-
-        const element =
-            document.getElementById(id);
-
-        if (!element) {
-            return;
         }
 
-
-        element.addEventListener(
-            "input",
-            calculateRR
-        );
-
-
-        element.addEventListener(
-            "change",
-            calculateRR
-        );
-    });
-
-
-    calculateRR();
-
-    form.addEventListener(
-        "submit",
-        saveTrade
-    );
-}
-
-
-/* =========================================================
-   SAVE TRADE
-   ========================================================= */
-
-async function saveTrade(event) {
-
-    event.preventDefault();
-
-
-    if (!getAuthToken()) {
-
-        window.location.replace(
-            "./login.html"
-        );
-
-        return;
     }
 
-
-    const getValue =
-        id =>
-            document
-                .getElementById(id)
-                ?.value || "";
-
-
-    const getNumber =
-        id => {
-
-            const value =
-                Number(
-                    getValue(id)
-                );
-
-            return Number.isFinite(value)
-                ? value
-                : 0;
-        };
-
-
-    const entry =
-        getNumber("entry");
-
-
-    const stopLoss =
-        getNumber("stopLoss");
-
-
-    const takeProfit =
-        getNumber("takeProfit");
-
-
-    const direction =
-        getValue("direction");
-
-
-    let riskDistance;
-    let rewardDistance;
-
-
-    if (direction === "Buy") {
-
-        riskDistance =
-            entry - stopLoss;
-
-        rewardDistance =
-            takeProfit - entry;
-
-    } else {
-
-        riskDistance =
-            stopLoss - entry;
-
-        rewardDistance =
-            entry - takeProfit;
-    }
-
-
-    if (
-        riskDistance <= 0 ||
-        rewardDistance <= 0
-    ) {
-
-        alert(
-            "Your Stop Loss and Take Profit do not match the trade direction."
-        );
-
-        return;
-    }
-
-
-    const trade = {
-
-        tradeDate:
-            getValue("tradeDate"),
-
-        entryTime:
-            getValue("entryTime") || null,
-
-        exitTime:
-            getValue("exitTime") || null,
-
-        pair:
-            getValue("pair")
-                .trim()
-                .toUpperCase(),
-
-        direction,
-
-        session:
-            getValue("session"),
-
-        strategy:
-            getValue("strategy")
-                .trim(),
-
-        setup:
-            getValue("setup")
-                .trim(),
-
-        htfBias:
-            getValue("htfBias"),
-
-        mtfStructure:
-            getValue("mtfStructure"),
-
-        ltfConfirmation:
-            getValue("ltfConfirmation"),
-
-        liquidity:
-            getValue("liquidity"),
-
-        mss:
-            getValue("mss"),
-
-        fvg:
-            getValue("fvg"),
-
-        orderBlock:
-            getValue("orderBlock"),
-
-        zone:
-            getValue("zone"),
-
-        entryPrice:
-            entry,
-
-        stopLoss,
-
-        takeProfit,
-
-        exitPrice:
-            getNumber("exitPrice") || null,
-
-        riskAmount:
-            getNumber("risk"),
-
-        positionSize:
-            getNumber("positionSize") || null,
-
-        result:
-            getValue("result"),
-
-        rResult:
-            getNumber("rResult"),
-
-        pnl:
-            getNumber("pnl"),
-
-        plannedRR:
-            rewardDistance /
-            riskDistance,
-
-        riskDistance:
-            Math.abs(riskDistance),
-
-        rewardDistance:
-            Math.abs(rewardDistance),
-
-        psychologyBefore:
-            getValue("psychologyBefore"),
-
-        psychologyDuring:
-            getValue("psychologyDuring"),
-
-        psychologyAfter:
-            getValue("psychologyAfter"),
-
-        followedPlan:
-            getValue("followedPlan"),
-
-        tradeQuality:
-            getValue("tradeQuality"),
-
-        mistake:
-            getValue("mistake"),
-
-        entryReason:
-            getValue("entryReason").trim(),
-
-        whatHappened:
-            getValue("whatHappened").trim(),
-
-        whatDidWell:
-            getValue("whatDidWell").trim(),
-
-        improvement:
-            getValue("improvement").trim(),
-
-        notes:
-            getValue("notes").trim()
-    };
-
-
-    if (!trade.pair) {
-
-        alert(
-            "Please enter a pair or market."
-        );
-
-        return;
-    }
-
-
-    try {
-
-        const button =
-            event.target.querySelector(
-                'button[type="submit"]'
-            );
-
-
-        if (button) {
-
-            button.disabled = true;
-
-            button.textContent =
-                "Saving...";
-        }
-
-
-        await apiRequest(
-            "/trades",
-            {
-                method: "POST",
-
-                body:
-                    JSON.stringify(trade)
-            }
-        );
-
-
-        alert(
-            "Trade saved successfully."
-        );
-
-
-        window.location.replace(
-            "./trades.html"
-        );
-
-
-    } catch (error) {
-
-        console.error(
-            "Trade save error:",
-            error
-        );
-
-
-        alert(
-            `Could not save trade: ${error.message}`
-        );
-
-
-        const button =
-            event.target.querySelector(
-                'button[type="submit"]'
-            );
-
-
-        if (button) {
-
-            button.disabled = false;
-
-            button.textContent =
-                "Save Trade";
-        }
-    }
-}
-
-
-/* =========================================================
-   RR CALCULATOR
-   ========================================================= */
-
-function calculateRR() {
-
-    const entry =
-        Number(
-            document.getElementById(
-                "entry"
-            )?.value
-        );
-
-
-    const stop =
-        Number(
-            document.getElementById(
-                "stopLoss"
-            )?.value
-        );
-
-
-    const target =
-        Number(
-            document.getElementById(
-                "takeProfit"
-            )?.value
-        );
-
-
-    const direction =
-        document.getElementById(
-            "direction"
-        )?.value;
-
-
-    const rrOutput =
-        document.getElementById(
-            "calculatedRR"
-        );
-
-
-    const riskOutput =
-        document.getElementById(
-            "riskDistance"
-        );
-
-
-    const rewardOutput =
-        document.getElementById(
-            "rewardDistance"
-        );
-
-
-    if (
-        !entry ||
-        !stop ||
-        !target
-    ) {
-
-        if (rrOutput) {
-            rrOutput.textContent = "1 : 0";
-        }
-
-        if (riskOutput) {
-            riskOutput.textContent = "0";
-        }
-
-        if (rewardOutput) {
-            rewardOutput.textContent = "0";
-        }
-
-        return;
-    }
-
-
-    let riskDistance;
-    let rewardDistance;
-
-
-    if (direction === "Buy") {
-
-        riskDistance =
-            entry - stop;
-
-        rewardDistance =
-            target - entry;
-
-    } else {
-
-        riskDistance =
-            stop - entry;
-
-        rewardDistance =
-            entry - target;
-    }
-
-
-    if (riskOutput) {
-
-        riskOutput.textContent =
-            Math.abs(
-                riskDistance
-            ).toFixed(5);
-    }
-
-
-    if (rewardOutput) {
-
-        rewardOutput.textContent =
-            Math.abs(
-                rewardDistance
-            ).toFixed(5);
-    }
-
-
-    if (
-        riskDistance <= 0 ||
-        rewardDistance <= 0
-    ) {
-
-        if (rrOutput) {
-            rrOutput.textContent = "Invalid";
-        }
-
-        return;
-    }
-
-
-    const rr =
-        rewardDistance /
-        riskDistance;
-
-
-    if (rrOutput) {
-
-        rrOutput.textContent =
-            `1 : ${rr.toFixed(2)}`;
-    }
 }
 
 
@@ -1743,18 +1472,30 @@ function calculateRR() {
    HELPERS
    ========================================================= */
 
-function setText(id, value) {
+function setText(
+    id,
+    value
+) {
 
     const element =
-        document.getElementById(id);
+        document.getElementById(
+            id
+        );
+
 
     if (element) {
-        element.textContent = value;
+
+        element.textContent =
+            value;
+
     }
+
 }
 
 
-function formatMoney(value) {
+function formatMoney(
+    value
+) {
 
     return new Intl.NumberFormat(
         "en-US",
@@ -1763,12 +1504,17 @@ function formatMoney(value) {
             currency: "USD"
         }
     ).format(
-        Number(value || 0)
+        Number(
+            value || 0
+        )
     );
+
 }
 
 
-function formatDate(value) {
+function formatDate(
+    value
+) {
 
     if (!value) {
         return "-";
@@ -1786,6 +1532,7 @@ function formatDate(value) {
     ) {
 
         return value;
+
     }
 
 
@@ -1797,17 +1544,36 @@ function formatDate(value) {
             year: "numeric"
         }
     );
+
 }
 
 
-function escapeHtml(value) {
+function escapeHtml(
+    value
+) {
 
     return String(value)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
+        .replaceAll(
+            "&",
+            "&amp;"
+        )
+        .replaceAll(
+            "<",
+            "&lt;"
+        )
+        .replaceAll(
+            ">",
+            "&gt;"
+        )
+        .replaceAll(
+            '"',
+            "&quot;"
+        )
+        .replaceAll(
+            "'",
+            "&#039;"
+        );
+
 }
 
 
@@ -1817,8 +1583,12 @@ function escapeHtml(value) {
 
 document.addEventListener(
     "DOMContentLoaded",
-    () => {
-        initializeAuth();
+    async () => {
+
+        initializeAuthUI();
+
+        await checkAuthentication();
+
     }
 );
 
@@ -1837,8 +1607,6 @@ window.SageJournal = {
 
     clearAuth,
 
-    getCurrentUser,
-
-    calculateRR
+    getCurrentUser
 
 };
