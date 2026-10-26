@@ -1,5 +1,7 @@
-<head>
+<!DOCTYPE html>
+<html lang="en">
 
+<head>
     <meta charset="UTF-8">
 
     <meta
@@ -7,33 +9,778 @@
         content="width=device-width, initial-scale=1.0"
     >
 
-    <title>Sage Journal — Dashboard</title>
+    <title>Sage Journal</title>
 
     <link
         rel="stylesheet"
-        href="./css/style.css"
+        href="css/style.css"
     >
 
     <style>
+        /* =====================================================
+           AUTH / APP VISIBILITY
+           ===================================================== */
 
-        /*
-         * Protected pages stay completely hidden
-         * until app.js confirms authentication.
-         */
-
-        html.auth-checking,
-        body.auth-loading {
+        html.auth-loading body {
             visibility: hidden;
         }
 
-        body.authenticated {
-            visibility: visible;
+        #authScreen {
+            display: none;
         }
 
-    </style>
+        #appScreen {
+            display: none;
+        }
 
+        body.show-auth #authScreen {
+            display: flex;
+        }
+
+        body.show-app #appScreen {
+            display: block;
+        }
+
+
+        /* =====================================================
+           AUTH SCREEN
+           ===================================================== */
+
+        .auth-page {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+
+        .auth-card {
+            width: 100%;
+            max-width: 430px;
+        }
+
+        .auth-form {
+            display: none;
+        }
+
+        .auth-form.active {
+            display: block;
+        }
+
+        .auth-switch {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .auth-switch button {
+            border: 0;
+            background: none;
+            padding: 0;
+            cursor: pointer;
+            font: inherit;
+        }
+
+        .auth-error {
+            min-height: 20px;
+        }
+    </style>
 </head>
-<script src="js/app.js?v=3"></script>
+
+
+<body class="auth-loading">
+
+
+<!-- =========================================================
+     AUTH SCREEN
+     ========================================================= -->
+
+<section id="authScreen" class="auth-page">
+
+    <div class="auth-card">
+
+        <div class="auth-brand">
+
+            <div class="brand-mark">
+                S
+            </div>
+
+            <div>
+                <h1>Sage</h1>
+                <span>Journal</span>
+            </div>
+
+        </div>
+
+
+        <!-- LOGIN -->
+
+        <div
+            id="loginView"
+            class="auth-form active"
+        >
+
+            <div class="auth-heading">
+
+                <h2>
+                    Welcome back
+                </h2>
+
+                <p>
+                    Login to continue to your trading journal.
+                </p>
+
+            </div>
+
+
+            <form id="loginForm">
+
+                <div class="form-group">
+
+                    <label for="loginEmail">
+                        Email
+                    </label>
+
+                    <input
+                        type="email"
+                        id="loginEmail"
+                        name="email"
+                        placeholder="you@example.com"
+                        autocomplete="email"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="loginPassword">
+                        Password
+                    </label>
+
+                    <input
+                        type="password"
+                        id="loginPassword"
+                        name="password"
+                        placeholder="Enter your password"
+                        autocomplete="current-password"
+                        required
+                    >
+
+                </div>
+
+
+                <p
+                    id="loginError"
+                    class="auth-error"
+                ></p>
+
+
+                <button
+                    type="submit"
+                    class="primary-btn auth-submit"
+                >
+                    Login
+                </button>
+
+            </form>
+
+
+            <div class="auth-switch">
+
+                <span>
+                    Don't have an account?
+                </span>
+
+                <button
+                    type="button"
+                    id="showRegister"
+                >
+                    Create account
+                </button>
+
+            </div>
+
+        </div>
+
+
+        <!-- REGISTER -->
+
+        <div
+            id="registerView"
+            class="auth-form"
+        >
+
+            <div class="auth-heading">
+
+                <h2>
+                    Create your account
+                </h2>
+
+                <p>
+                    Start tracking and improving your trading.
+                </p>
+
+            </div>
+
+
+            <form id="registerForm">
+
+                <div class="form-group">
+
+                    <label for="registerName">
+                        Display name
+                    </label>
+
+                    <input
+                        type="text"
+                        id="registerName"
+                        name="displayName"
+                        placeholder="Your name"
+                        autocomplete="name"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="registerEmail">
+                        Email
+                    </label>
+
+                    <input
+                        type="email"
+                        id="registerEmail"
+                        name="email"
+                        placeholder="you@example.com"
+                        autocomplete="email"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="registerPassword">
+                        Password
+                    </label>
+
+                    <input
+                        type="password"
+                        id="registerPassword"
+                        name="password"
+                        placeholder="At least 8 characters"
+                        autocomplete="new-password"
+                        minlength="8"
+                        required
+                    >
+
+                </div>
+
+
+                <p
+                    id="registerError"
+                    class="auth-error"
+                ></p>
+
+
+                <button
+                    type="submit"
+                    class="primary-btn auth-submit"
+                >
+                    Create Account
+                </button>
+
+            </form>
+
+
+            <div class="auth-switch">
+
+                <span>
+                    Already have an account?
+                </span>
+
+                <button
+                    type="button"
+                    id="showLogin"
+                >
+                    Login
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+
+<!-- =========================================================
+     APP / DASHBOARD
+     ========================================================= -->
+
+<div id="appScreen">
+
+    <div class="app">
+
+        <!-- SIDEBAR -->
+
+        <aside class="sidebar">
+
+            <div class="brand">
+
+                <div class="brand-mark">
+                    S
+                </div>
+
+                <div>
+                    <h2>Sage</h2>
+                    <span>Journal</span>
+                </div>
+
+            </div>
+
+
+            <nav>
+
+                <a
+                    href="index.html"
+                    class="nav-item active"
+                >
+                    <span>⌂</span>
+                    Dashboard
+                </a>
+
+                <a
+                    href="calendar.html"
+                    class="nav-item"
+                >
+                    <span>□</span>
+                    Calendar
+                </a>
+
+                <a
+                    href="trades.html"
+                    class="nav-item"
+                >
+                    <span>↗</span>
+                    Trades
+                </a>
+
+                <a
+                    href="add-trade.html"
+                    class="nav-item"
+                >
+                    <span>＋</span>
+                    Add Trade
+                </a>
+
+                <a
+                    href="analytics.html"
+                    class="nav-item"
+                >
+                    <span>◫</span>
+                    Analytics
+                </a>
+
+            </nav>
+
+
+            <div class="sidebar-bottom">
+
+                <div class="account-mini">
+
+                    <div
+                        class="avatar"
+                        data-user-avatar
+                    >
+                        S
+                    </div>
+
+                    <div>
+
+                        <strong data-user-name>
+                            Trader
+                        </strong>
+
+                        <small data-user-email>
+                            Loading...
+                        </small>
+
+                    </div>
+
+                </div>
+
+
+                <button
+                    id="logoutButton"
+                    class="logout-button"
+                    type="button"
+                >
+                    Logout
+                </button>
+
+            </div>
+
+        </aside>
+
+
+        <!-- MAIN -->
+
+        <main class="main">
+
+            <header class="topbar">
+
+                <button
+                    class="mobile-menu"
+                    id="mobileMenu"
+                    type="button"
+                >
+                    ☰
+                </button>
+
+
+                <div>
+
+                    <p class="eyebrow">
+                        TRADING JOURNAL
+                    </p>
+
+                    <h1>
+                        Dashboard
+                    </h1>
+
+                </div>
+
+
+                <a
+                    href="add-trade.html"
+                    class="primary-btn"
+                >
+                    + Add Trade
+                </a>
+
+            </header>
+
+
+            <div id="dashboard">
+
+                <!-- STATS -->
+
+                <section class="stats-grid">
+
+                    <div class="stat-card">
+
+                        <span>
+                            Total P&L
+                        </span>
+
+                        <strong id="totalPnl">
+                            $0.00
+                        </strong>
+
+                        <small class="positive">
+                            +0.00%
+                        </small>
+
+                    </div>
+
+
+                    <div class="stat-card">
+
+                        <span>
+                            Win Rate
+                        </span>
+
+                        <strong id="winRate">
+                            0%
+                        </strong>
+
+                        <small>
+                            0 trades
+                        </small>
+
+                    </div>
+
+
+                    <div class="stat-card">
+
+                        <span>
+                            Profit Factor
+                        </span>
+
+                        <strong id="profitFactor">
+                            0.00
+                        </strong>
+
+                        <small>
+                            Overall
+                        </small>
+
+                    </div>
+
+
+                    <div class="stat-card">
+
+                        <span>
+                            Total Trades
+                        </span>
+
+                        <strong id="totalTrades">
+                            0
+                        </strong>
+
+                        <small>
+                            This account
+                        </small>
+
+                    </div>
+
+                </section>
+
+
+                <!-- DASHBOARD GRID -->
+
+                <section class="dashboard-grid">
+
+                    <div class="panel equity-panel">
+
+                        <div class="panel-header">
+
+                            <div>
+
+                                <h3>
+                                    Equity Curve
+                                </h3>
+
+                                <p>
+                                    Your account performance over time
+                                </p>
+
+                            </div>
+
+
+                            <select id="equityRange">
+
+                                <option>
+                                    All Time
+                                </option>
+
+                                <option>
+                                    This Month
+                                </option>
+
+                                <option>
+                                    This Week
+                                </option>
+
+                            </select>
+
+                        </div>
+
+
+                        <div class="chart-container">
+
+                            <canvas
+                                id="equityChart"
+                            ></canvas>
+
+
+                            <div
+                                class="empty-chart"
+                                id="emptyChart"
+                            >
+
+                                <span>
+                                    ⌁
+                                </span>
+
+                                <p>
+                                    No trades yet
+                                </p>
+
+                                <small>
+                                    Add your first trade to start tracking performance.
+                                </small>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="panel">
+
+                        <div class="panel-header">
+
+                            <div>
+
+                                <h3>
+                                    Quick Stats
+                                </h3>
+
+                                <p>
+                                    Current performance
+                                </p>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="quick-stat">
+
+                            <span>
+                                Winning Trades
+                            </span>
+
+                            <strong id="winningTrades">
+                                0
+                            </strong>
+
+                        </div>
+
+
+                        <div class="quick-stat">
+
+                            <span>
+                                Losing Trades
+                            </span>
+
+                            <strong id="losingTrades">
+                                0
+                            </strong>
+
+                        </div>
+
+
+                        <div class="quick-stat">
+
+                            <span>
+                                Average R
+                            </span>
+
+                            <strong id="averageR">
+                                0R
+                            </strong>
+
+                        </div>
+
+
+                        <div class="quick-stat">
+
+                            <span>
+                                Best Trade
+                            </span>
+
+                            <strong id="bestTrade">
+                                0R
+                            </strong>
+
+                        </div>
+
+
+                        <div class="quick-stat">
+
+                            <span>
+                                Worst Trade
+                            </span>
+
+                            <strong id="worstTrade">
+                                0R
+                            </strong>
+
+                        </div>
+
+                    </div>
+
+                </section>
+
+
+                <!-- RECENT TRADES -->
+
+                <section class="panel recent-panel">
+
+                    <div class="panel-header">
+
+                        <div>
+
+                            <h3>
+                                Recent Trades
+                            </h3>
+
+                            <p>
+                                Your latest journal entries
+                            </p>
+
+                        </div>
+
+
+                        <a
+                            href="trades.html"
+                            class="text-btn"
+                        >
+                            View all →
+                        </a>
+
+                    </div>
+
+
+                    <div class="table-wrapper">
+
+                        <table>
+
+                            <thead>
+
+                                <tr>
+
+                                    <th>Date</th>
+                                    <th>Pair</th>
+                                    <th>Direction</th>
+                                    <th>Setup</th>
+                                    <th>Result</th>
+                                    <th>R</th>
+                                    <th>P&L</th>
+
+                                </tr>
+
+                            </thead>
+
+
+                            <tbody id="recentTrades">
+
+                                <tr class="empty-row">
+
+                                    <td colspan="7">
+                                        No trades recorded yet.
+                                    </td>
+
+                                </tr>
+
+                            </tbody>
+
+                        </table>
+
+                    </div>
+
+                </section>
+
+            </div>
+
+        </main>
+
+    </div>
+
+</div>
+
+
+<script src="js/app.js?v=4"></script>
 
 </body>
 </html>
