@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sage Journal — Add Trade</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+<div class="app">
+
+    <aside class="sidebar">
+
+        <div class="brand">
+            <div class="brand-mark">S</div>
+
+            <div>
+                <h2>Sage</h2>
+                <span>Journal</span>
+            </div>
+        </div>
+
+        <nav>
+            <a href="index.html" class="nav-item">
+                <span>⌂</span> Dashboard
+            </a>
+
+            <a href="calendar.html" class="nav-item">
+                <span>□</span> Calendar
+            </a>
+
+            <a href="trades.html" class="nav-item">
+                <span>↗</span> Trades
+            </a>
+
+            <a href="add-trade.html" class="nav-item active">
+                <span>＋</span> Add Trade
+            </a>
+
+            <a href="analytics.html" class="nav-item">
+                <span>◫</span> Analytics
+            </a>
+        </nav>
+
+        <div class="sidebar-bottom">
+            <div class="account-mini">
+                <div class="avatar">S</div>
+
+                <div>
+                    <strong>Trader</strong>
+                    <small>Demo Account</small>
+                </div>
+            </div>
+        </div>
+
+    </aside>
+
+
+    <main class="main">
+
+        <header class="topbar">
+
+            <button class="mobile-menu" id="mobileMenu">
+                ☰
+            </button>
+
+            <div>
+                <p class="eyebrow">TRADING JOURNAL</p>
+                <h1>Add Trade</h1>
+            </div>
+
+        </header>
+
+
+        <form id="tradeForm" class="trade-form">
+
+
+            <!-- TRADE INFORMATION -->
+
+            <section class="panel">
+
+                <div class="panel-header">
+                    <div>
+                        <h3>Trade Information</h3>
+                        <p>Basic information about the trade.</p>
+                    </div>
+                </div>
+
+
+                <div class="form-grid">
+
+                    <div class="form-group">
+                        <label>Date</label>
+                        <input type="date" id="tradeDate" required>
+                    </div>
+
+
+                    <div class="form-group">
+                        <label>Entry Time</label>
+                        <input type="time" id="entryTime">
+                    </div>
+
+
+                    <div class="form-group">
+                        <label>Exit Time</label>
+                        <input type="time" id="exitTime">
+                    </div>
+
+
+                    <div class="form-group">
+                        <label>Pair / Market</label>
+                        <input
+                            type="text"
+                            id="pair"
+                            placeholder="EURUSD"
+                            required
+                        >
+                    </div>
+
+
+                    <div class="form-group">
+                        <label>Direction</label>
+
+                        <select id="direction">
+                            <option value="Buy">Buy</option>
+                            <option value="Sell">Sell</option>
+                        </select>
+                    </div>
+
+
+                    <div class="form-group">
+                        <label>Session</label>
+
+                        <select id="session">
+                            <option value="London">London</option>
+                            <option value="New York">New York</option>
+                            <option value="Asian">Asian</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+
+
+                    <div class="form-group">
+                        <label>Account</label>
+
+                        <select id="account">
+                            <option value="Demo">Demo Account</option>
+                            <option value="Live">Live Account</option>
+                        </select>
+                    </div>
+
+
+                    <div class="form-group">
+                        <label>Strategy</label>
+
+                        <input
+                            type="text"
+                            id="strategy"
+                            placeholder="My strategy"
+                        >
+                    </div>
+
+
+                    <div class="form-group">
+                        <label>Setup</label>
+
+                        <input
+                            type="text"
+                            id="setup"
+                            placeholder="MSS + FVG"
+                        >
+                    </div>
+
+                </div>
+
+            </section>
+
+
+
+            <!-- MARKET CONTEXT -->
+
+            <section class="panel">
+
+                <div class="panel-header">
+
+                    <div>
+                        <h3>Market Context</h3>
+                        <p>Record what you saw before entering.</p>
+                    </div>
+
+                </div>
+
+
+                <div class="form-grid">
+
+                    <div class="form-group">
+                        <label>HTF — 4H Bias</label>
+
+                        <select id="htfBias">
+                            <option value="">Select</option>
+                            <option value="Bullish">Bullish</option>
+                            <option value="Bearish">Bearish</option>
+                            <option value="Neutral">Neutral</option>
+                        </select>
+                    </div>
+
+
+                    <div class="form-group">
+                        <label>MTF — 15M Structure</label>
+
+                        <select id="mtfStructure">
+                            <option value="">Select</option>
+                            <option value="Bullish">Bullish</option>
+                            <option value="Bearish">Bearish</option>
+                            <option value="Range">Range</option>
+                        </select>
+                    </div>
+
+
+                    <div class="form-group">
+                        <label>LTF — 5M Confirmation</label>
+
+                        <select id="ltfConfirmation">
+                            <option value="">Select</option>
+                            <option value="MSS">MSS</option>
+                            <option value="Pattern">Pattern</option>
+                            <option value="Both">Both</option>
+                            <option value="None">None</option>
+                        </select>
+                    </div>
+
+
+                    <div class="form-group">
+                        <label>Liquidity Sweep</label>
+
+                        <select id="liquidity">
+                            <option value="">Select</option>
+                            <option value="Yes">Yes</option>
+                            <option value="No">No</option>
+                        </select>
+                    </div>
+
+
+                    <div class="form-group">
+                        <label>MSS</label>
+
+                        <select id="mss">
+                            <option value="">Select</option>
+                            <option value="Yes">Yes</option>
+                            <option value="No">No</option>
+                        </select>
+                    </div>
+
+
+                    <div class="form-group">
+                        <label>FVG</label>
+
+                        <select id="fvg">
+                            <option value="">Select</option>
+                            <option value="Yes">Yes</option>
+                            <option value="No">No</option>
+                        </select>
+                    </div>
+
+
+                    <div class="form-group">
+                        <label>Order Block</label>
+
+                        <select id="orderBlock">
+                            <option value="">Select</option>
+                            <option value="Yes">Yes</option>
+                            <option value="No">No</option>
+                        </select>
+                    </div>
+
+
+                    <div class="form-group">
+                        <label>Support / Resistance</label>
+
+                        <select id="zone">
+                            <option value="">Select</option>
+                            <option value="Support">Support</option>
+                            <option value="Resistance">Resistance</option>
+                            <option value="None">None</option>
+                        </select>
+                    </div>
+
+                </div>
+
+            </section>
+
+
+
+            <!-- EXECUTION -->
+
+            <section class="panel">
+
+                <div class="panel-header">
+
+                    <div>
+                        <h3>Execution</h3>
+                        <p>Record the actual trade.</p>
+                    </div>
+
+                </div>
+
+
+                <div class="form-grid">
+
+                    <div class="form-group">
+                        <label>Entry Price</label>
+
+                        <input
+                            type="number"
+                            step="any"
+                            id="entry"
+                            placeholder="1.08000"
+                            required
+                        >
+                    </div>
+
+
+                    <div class="form-group">
+                        <label>Stop Loss</label>
+
+                        <input
+                            type="number"
+                            step="any"
+                            id="stopLoss"
+                            placeholder="1.07800"
+                            required
+                        >
+                    </div>
+
+
+                    <div class="form-group">
+                        <label>Take Profit</label>
+
+                        <input
+                            type="number"
+                            step="any"
+                            id="takeProfit"
+                            placeholder="1.08400"
+                            required
+                        >
+                    </div>
+
+
+                    <div class="form-group">
+                        <label>Exit Price</label>
+
+                        <input
+                            type="number"
+                            step="any"
+                            id="exitPrice"
+                            placeholder="1.08350"
+                        >
+                    </div>
+
+
+                    <div class="form-group">
+                        <label>Risk ($)</label>
+
+                        <input
+                            type="number"
+                            step="any"
+                            id="risk"
+                            placeholder="2"
+                            required
+                        >
+                    </div>
+
+
+                    <div class="form-group">
+                        <label>Position Size</label>
+
+                        <input
+                            type="number"
+                            step="any"
+                            id="positionSize"
+                            placeholder="0.01"
+                        >
+                    </div>
+
+
+                    <div class="form-group">
+                        <label>Result</label>
+
+                        <select id="result">
+                            <option value="win">Win</option>
+                            <option value="loss">Loss</option>
+                            <option value="breakeven">Breakeven</option>
+                        </select>
+                    </div>
+
+
+                    <div class="form-group">
+                        <label>Actual R</label>
+
+                        <input
+                            type="number"
+                            step="any"
+                            id="rResult"
+                            placeholder="2"
+                            required
+                        >
+                    </div>
+
+
+                    <div class="form-group">
+                        <label>P&L ($)</label>
+
+                        <input
+                            type="number"
+                            step="any"
+                            id="pnl"
+                            placeholder="4"
+                            required
+                        >
+                    </div>
+
+                </div>
+
+
+                <div class="calculation-grid">
+
+                    <div class="calculation-box">
+                        <span>Planned R:R</span>
+                        <strong id="calculatedRR">1 : 0</strong>
+                    </div>
+
+                    <div class="calculation-box">
+                        <span>Risk Distance</span>
+                        <strong id="riskDistance">0</strong>
+                    </div>
+
+                    <div class="calculation-box">
+                        <span>Reward Distance</span>
+                        <strong id="rewardDistance">0</strong>
+                    </div>
+
+                </div>
+
+            </section>
+
+
+
+            <!-- PSYCHOLOGY -->
+
+            <section class="panel">
+
+                <div class="panel-header">
+
+                    <div>
+                        <h3>Psychology & Discipline</h3>
+                        <p>Track your behaviour, not just your result.</p>
+                    </div>
+
+                </div>
+
+
+                <div class="form-grid">
+
+                    <div class="form-group">
+                        <label>Before Trade</label>
+
+                        <select id="psychologyBefore">
+                            <option value="">Select</option>
+                            <option value="Calm">Calm</option>
+                            <option value="Confident">Confident</option>
+                            <option value="Unsure">Unsure</option>
+                            <option value="FOMO">FOMO</option>
+                            <option value="Fear">Fear</option>
+                            <option value="Revenge">Revenge</option>
+                        </select>
+                    </div>
+
+
+                    <div class="form-group">
+                        <label>During Trade</label>
+
+                        <select id="psychologyDuring">
+                            <option value="">Select</option>
+                            <option value="Calm">Calm</option>
+                            <option value="Patient">Patient</option>
+                            <option value="Fearful">Fearful</option>
+                            <option value="Overmanaged">Overmanaged</option>
+                            <option value="FOMO">FOMO</option>
+                        </select>
+                    </div>
+
+
+                    <div class="form-group">
+                        <label>After Trade</label>
+
+                        <select id="psychologyAfter">
+                            <option value="">Select</option>
+                            <option value="Satisfied">Satisfied</option>
+                            <option value="Frustrated">Frustrated</option>
+                            <option value="Regret">Regret</option>
+                            <option value="Neutral">Neutral</option>
+                        </select>
+                    </div>
+
+
+                    <div class="form-group">
+                        <label>Followed Plan?</label>
+
+                        <select id="followedPlan">
+                            <option value="">Select</option>
+                            <option value="Yes">Yes</option>
+                            <option value="Partially">Partially</option>
+                            <option value="No">No</option>
+                        </select>
+                    </div>
+
+
+                    <div class="form-group">
+                        <label>Trade Quality</label>
+
+                        <select id="tradeQuality">
+                            <option value="">Select</option>
+                            <option value="A+">A+</option>
+                            <option value="A">A</option>
+                            <option value="B">B</option>
+                            <option value="C">C</option>
+                        </select>
+                    </div>
+
+
+                    <div class="form-group">
+                        <label>Mistake</label>
+
+                        <select id="mistake">
+                            <option value="None">None</option>
+                            <option value="Early Entry">Early Entry</option>
+                            <option value="Late Entry">Late Entry</option>
+                            <option value="Moved SL">Moved SL</option>
+                            <option value="Closed Early">Closed Early</option>
+                            <option value="Overtrading">Overtrading</option>
+                            <option value="FOMO">FOMO</option>
+                            <option value="Revenge Trading">Revenge Trading</option>
+                            <option value="Ignored Rules">Ignored Rules</option>
+                        </select>
+                    </div>
+
+                </div>
+
+            </section>
+
+
+
+            <!-- REVIEW -->
+
+            <section class="panel">
+
+                <div class="panel-header">
+
+                    <div>
+                        <h3>Trade Review</h3>
+                        <p>Review the trade while it is still fresh.</p>
+                    </div>
+
+                </div>
+
+
+                <div class="review-fields">
+
+                    <div class="form-group">
+
+                        <label>Why did I enter?</label>
+
+                        <textarea
+                            id="entryReason"
+                            rows="4"
+                            placeholder="What was the reason for this entry?"
+                        ></textarea>
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label>What happened?</label>
+
+                        <textarea
+                            id="whatHappened"
+                            rows="4"
+                            placeholder="Describe how the trade developed."
+                        ></textarea>
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label>What did I do well?</label>
+
+                        <textarea
+                            id="whatDidWell"
+                            rows="4"
+                            placeholder="What part of the execution was good?"
+                        ></textarea>
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label>What could I improve?</label>
+
+                        <textarea
+                            id="improvement"
+                            rows="4"
+                            placeholder="What should I do differently next time?"
+                        ></textarea>
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label>Additional Notes</label>
+
+                        <textarea
+                            id="notes"
+                            rows="5"
+                            placeholder="Anything else worth remembering..."
+                        ></textarea>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+
+            <!-- SCREENSHOTS -->
+
+            <section class="panel">
+
+                <div class="panel-header">
+
+                    <div>
+                        <h3>Trade Screenshots</h3>
+                        <p>Add chart screenshots for later review.</p>
+                    </div>
+
+                </div>
+
+
+                <div class="screenshot-grid">
+
+                    <label class="upload-box">
+
+                        <input
+                            type="file"
+                            id="beforeScreenshot"
+                            accept="image/*"
+                            hidden
+                        >
+
+                        <span>＋</span>
+
+                        <strong>Before Trade</strong>
+
+                        <small>
+                            Chart before entry
+                        </small>
+
+                    </label>
+
+
+                    <label class="upload-box">
+
+                        <input
+                            type="file"
+                            id="afterScreenshot"
+                            accept="image/*"
+                            hidden
+                        >
+
+                        <span>＋</span>
+
+                        <strong>After Trade</strong>
+
+                        <small>
+                            Chart after exit
+                        </small>
+
+                    </label>
+
+                </div>
+
+            </section>
+
+
+
+            <div class="form-actions">
+
+                <a
+                    href="index.html"
+                    class="secondary-btn"
+                >
+                    Cancel
+                </a>
+
+                <button
+                    type="submit"
+                    class="primary-btn"
+                >
+                    Save Trade
+                </button>
+
+            </div>
+
+
+        </form>
+
+    </main>
+
+</div>
+
+<script src="js/app.js"></script>
+
+</body>
+</html>
