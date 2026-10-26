@@ -12,48 +12,29 @@ const API_BASE_URL =
    ========================================================= */
 
 function getAuthToken() {
-    return localStorage.getItem(
-        "sageJournalToken"
-    );
+    return localStorage.getItem("sageJournalToken");
 }
 
 
 function saveAuthToken(token) {
-    localStorage.setItem(
-        "sageJournalToken",
-        token
-    );
+    localStorage.setItem("sageJournalToken", token);
 }
 
 
 function clearAuth() {
-
-    localStorage.removeItem(
-        "sageJournalToken"
-    );
-
-    localStorage.removeItem(
-        "sageJournalUser"
-    );
+    localStorage.removeItem("sageJournalToken");
+    localStorage.removeItem("sageJournalUser");
 }
 
 
 function getCurrentUser() {
-
     try {
-
         return JSON.parse(
-            localStorage.getItem(
-                "sageJournalUser"
-            )
+            localStorage.getItem("sageJournalUser")
         );
-
     } catch {
-
         return null;
-
     }
-
 }
 
 
@@ -62,23 +43,26 @@ function getCurrentUser() {
    ========================================================= */
 
 function getCurrentPage() {
+    const path = window.location.pathname;
 
-    const path =
-        window.location.pathname;
-
-    const page =
-        path
-            .split("/")
-            .pop();
+    const page = path
+        .split("/")
+        .pop();
 
     return page || "index.html";
 }
 
 
+const currentPage = getCurrentPage();
+
 const publicPages = [
     "login.html",
     "register.html"
 ];
+
+
+const isPublicPage =
+    publicPages.includes(currentPage);
 
 
 /* =========================================================
@@ -93,24 +77,15 @@ async function apiRequest(
     const token =
         getAuthToken();
 
-
     const headers = {
-
-        "Content-Type":
-            "application/json",
-
+        "Content-Type": "application/json",
         ...(options.headers || {})
-
     };
 
-
     if (token) {
-
         headers.Authorization =
             `Bearer ${token}`;
-
     }
-
 
     const response =
         await fetch(
@@ -121,60 +96,40 @@ async function apiRequest(
             }
         );
 
-
     let data = null;
 
-
     try {
-
-        data =
-            await response.json();
-
+        data = await response.json();
     } catch {
-
         data = null;
-
     }
-
 
     if (!response.ok) {
 
-        if (
-            response.status === 401
-        ) {
+        /*
+         * Only clear authentication when an
+         * authenticated API request actually
+         * returns 401.
+         */
+        if (response.status === 401) {
 
             clearAuth();
 
-            /*
-             * Only redirect when a protected
-             * page makes an unauthorized request.
-             */
-            if (
-                !publicPages.includes(
-                    getCurrentPage()
-                )
-            ) {
-
+            if (!isPublicPage) {
                 window.location.replace(
                     "login.html"
                 );
-
             }
-
         }
-
 
         throw new Error(
             data?.error ||
             data?.message ||
             `Request failed (${response.status})`
         );
-
     }
 
-
     return data;
-
 }
 
 
@@ -187,11 +142,9 @@ async function verifyAuthentication() {
     const token =
         getAuthToken();
 
-
     if (!token) {
         return false;
     }
-
 
     try {
 
@@ -199,7 +152,6 @@ async function verifyAuthentication() {
             await apiRequest(
                 "/auth/me"
             );
-
 
         if (data?.user) {
 
@@ -209,9 +161,7 @@ async function verifyAuthentication() {
                     data.user
                 )
             );
-
         }
-
 
         return true;
 
@@ -220,76 +170,44 @@ async function verifyAuthentication() {
         clearAuth();
 
         return false;
-
     }
-
 }
 
 
 /* =========================================================
-   AUTH PAGE CONTROL
+   AUTH STARTUP
    ========================================================= */
 
 async function initializeAuth() {
 
-    const currentPage =
-        getCurrentPage();
-
-
-    const isPublicPage =
-        publicPages.includes(
-            currentPage
-        );
-
-
     /*
-     * Hide protected pages while
-     * authentication is being checked.
+     * -------------------------------------------------------
+     * PUBLIC PAGES
+     * -------------------------------------------------------
+     *
+     * Login and register must NEVER redirect simply because
+     * the page loaded.
      */
-    if (!isPublicPage) {
-
-        document.documentElement.classList.add(
-            "auth-checking"
-        );
-
-        document.body.classList.add(
-            "auth-loading"
-        );
-
-    }
-
-
-    const token =
-        getAuthToken();
-
-
-    /* =====================================================
-       PUBLIC PAGE
-       ===================================================== */
 
     if (isPublicPage) {
 
         /*
-         * Logged out:
-         * stay on login/register.
+         * If there is no token, just initialize
+         * the page normally.
          */
-        if (!token) {
-
-            document.body.classList.remove(
-                "auth-loading"
-            );
+        if (!getAuthToken()) {
 
             initializePublicPage();
 
             return;
-
         }
 
 
         /*
-         * Token exists.
-         * Verify it before redirecting.
+         * There is a token.
+         * Check whether it is actually valid.
          */
+
         const valid =
             await verifyAuthentication();
 
@@ -301,28 +219,44 @@ async function initializeAuth() {
             );
 
             return;
-
         }
 
 
         /*
-         * Invalid/expired token.
-         * Stay on current public page.
+         * Invalid token was cleared by
+         * verifyAuthentication().
+         *
+         * Stay on the current public page.
          */
-        document.body.classList.remove(
-            "auth-loading"
-        );
 
         initializePublicPage();
 
         return;
-
     }
 
 
-    /* =====================================================
-       PROTECTED PAGE
-       ===================================================== */
+    /*
+     * -------------------------------------------------------
+     * PROTECTED PAGES
+     * -------------------------------------------------------
+     */
+
+    document.documentElement.classList.add(
+        "auth-checking"
+    );
+
+    document.body.classList.add(
+        "auth-loading"
+    );
+
+
+    const token =
+        getAuthToken();
+
+
+    /*
+     * No token = definitely logged out.
+     */
 
     if (!token) {
 
@@ -331,9 +265,13 @@ async function initializeAuth() {
         );
 
         return;
-
     }
 
+
+    /*
+     * Verify the token before displaying
+     * any protected content.
+     */
 
     const valid =
         await verifyAuthentication();
@@ -346,14 +284,13 @@ async function initializeAuth() {
         );
 
         return;
-
     }
 
 
     /*
      * Authentication confirmed.
-     * Only now initialize the dashboard/app.
      */
+
     document.body.classList.remove(
         "auth-loading"
     );
@@ -368,7 +305,6 @@ async function initializeAuth() {
 
 
     initializeProtectedPage();
-
 }
 
 
@@ -378,96 +314,13 @@ async function initializeAuth() {
 
 function initializePublicPage() {
 
-    initializePublicNavigation();
-
-
-    if (
-        getCurrentPage() ===
-        "login.html"
-    ) {
-
+    if (currentPage === "login.html") {
         initializeLogin();
-
     }
 
-
-    if (
-        getCurrentPage() ===
-        "register.html"
-    ) {
-
+    if (currentPage === "register.html") {
         initializeRegister();
-
     }
-
-}
-
-
-/* =========================================================
-   PUBLIC NAVIGATION
-   ========================================================= */
-
-function initializePublicNavigation() {
-
-    /*
-     * Explicitly handle the login/register
-     * links instead of relying only on the
-     * browser's default navigation.
-     */
-
-    const registerLinks =
-        document.querySelectorAll(
-            'a[href="register.html"], ' +
-            'a[href="./register.html"]'
-        );
-
-
-    registerLinks.forEach(
-        link => {
-
-            link.addEventListener(
-                "click",
-                event => {
-
-                    event.preventDefault();
-
-                    window.location.assign(
-                        "./register.html"
-                    );
-
-                }
-            );
-
-        }
-    );
-
-
-    const loginLinks =
-        document.querySelectorAll(
-            'a[href="login.html"], ' +
-            'a[href="./login.html"]'
-        );
-
-
-    loginLinks.forEach(
-        link => {
-
-            link.addEventListener(
-                "click",
-                event => {
-
-                    event.preventDefault();
-
-                    window.location.assign(
-                        "./login.html"
-                    );
-
-                }
-            );
-
-        }
-    );
-
 }
 
 
@@ -486,7 +339,6 @@ function initializeProtectedPage() {
     initializeTradeForm();
 
     initializeDashboard();
-
 }
 
 
@@ -501,25 +353,9 @@ function initializeLogin() {
             "loginForm"
         );
 
-
     if (!form) {
         return;
     }
-
-
-    /*
-     * Prevent duplicate submit handlers.
-     */
-    if (
-        form.dataset.initialized ===
-        "true"
-    ) {
-        return;
-    }
-
-
-    form.dataset.initialized =
-        "true";
 
 
     form.addEventListener(
@@ -557,20 +393,14 @@ function initializeLogin() {
             }
 
 
-            if (
-                !email ||
-                !password
-            ) {
+            if (!email || !password) {
 
                 if (error) {
-
                     error.textContent =
                         "Enter your email and password.";
-
                 }
 
                 return;
-
             }
 
 
@@ -584,12 +414,10 @@ function initializeLogin() {
 
                 if (button) {
 
-                    button.disabled =
-                        true;
+                    button.disabled = true;
 
                     button.textContent =
                         "Signing in...";
-
                 }
 
 
@@ -613,7 +441,6 @@ function initializeLogin() {
                     throw new Error(
                         "Login succeeded but no authentication token was returned."
                     );
-
                 }
 
 
@@ -630,13 +457,14 @@ function initializeLogin() {
                             data.user
                         )
                     );
-
                 }
 
 
                 /*
-                 * Full navigation to dashboard.
+                 * Use the absolute filename.
+                 * This works correctly on Netlify.
                  */
+
                 window.location.replace(
                     "./index.html"
                 );
@@ -644,28 +472,20 @@ function initializeLogin() {
             } catch (err) {
 
                 if (error) {
-
                     error.textContent =
                         err.message;
-
                 }
-
 
                 if (button) {
 
-                    button.disabled =
-                        false;
+                    button.disabled = false;
 
                     button.textContent =
                         "Login";
-
                 }
-
             }
-
         }
     );
-
 }
 
 
@@ -680,25 +500,9 @@ function initializeRegister() {
             "registerForm"
         );
 
-
     if (!form) {
         return;
     }
-
-
-    /*
-     * Prevent duplicate submit handlers.
-     */
-    if (
-        form.dataset.initialized ===
-        "true"
-    ) {
-        return;
-    }
-
-
-    form.dataset.initialized =
-        "true";
 
 
     form.addEventListener(
@@ -755,27 +559,21 @@ function initializeRegister() {
 
                     error.textContent =
                         "Please complete all fields.";
-
                 }
 
                 return;
-
             }
 
 
-            if (
-                password.length < 8
-            ) {
+            if (password.length < 8) {
 
                 if (error) {
 
                     error.textContent =
                         "Password must be at least 8 characters.";
-
                 }
 
                 return;
-
             }
 
 
@@ -789,12 +587,10 @@ function initializeRegister() {
 
                 if (button) {
 
-                    button.disabled =
-                        true;
+                    button.disabled = true;
 
                     button.textContent =
                         "Creating account...";
-
                 }
 
 
@@ -806,13 +602,9 @@ function initializeRegister() {
 
                             body:
                                 JSON.stringify({
-
                                     displayName,
-
                                     email,
-
                                     password
-
                                 })
                         }
                     );
@@ -823,7 +615,6 @@ function initializeRegister() {
                     throw new Error(
                         "Account was created but no authentication token was returned."
                     );
-
                 }
 
 
@@ -840,14 +631,14 @@ function initializeRegister() {
                             data.user
                         )
                     );
-
                 }
 
 
                 /*
-                 * New account goes directly
-                 * to the protected dashboard.
+                 * Registration succeeded.
+                 * Go directly to the protected dashboard.
                  */
+
                 window.location.replace(
                     "./index.html"
                 );
@@ -855,28 +646,20 @@ function initializeRegister() {
             } catch (err) {
 
                 if (error) {
-
                     error.textContent =
                         err.message;
-
                 }
-
 
                 if (button) {
 
-                    button.disabled =
-                        false;
+                    button.disabled = false;
 
                     button.textContent =
                         "Create Account";
-
                 }
-
             }
-
         }
     );
-
 }
 
 
@@ -890,7 +673,6 @@ function initializeNavigation() {
         document.querySelector(
             ".sidebar"
         );
-
 
     const mobileMenu =
         document.getElementById(
@@ -910,10 +692,8 @@ function initializeNavigation() {
                 sidebar.classList.toggle(
                     "mobile-open"
                 );
-
             }
         );
-
     }
 
 
@@ -931,13 +711,12 @@ function initializeNavigation() {
 
             if (
                 href ===
-                getCurrentPage()
+                currentPage
             ) {
 
                 item.classList.add(
                     "active"
                 );
-
             }
 
 
@@ -948,12 +727,9 @@ function initializeNavigation() {
                     sidebar?.classList.remove(
                         "mobile-open"
                     );
-
                 }
             );
-
         });
-
 }
 
 
@@ -966,7 +742,6 @@ function initializeUser() {
     const user =
         getCurrentUser();
 
-
     if (!user) {
         return;
     }
@@ -975,8 +750,7 @@ function initializeUser() {
     const name =
         user.displayName ||
         user.name ||
-        user.email
-            ?.split("@")[0] ||
+        user.email?.split("@")[0] ||
         "Trader";
 
 
@@ -988,7 +762,6 @@ function initializeUser() {
 
             element.textContent =
                 name;
-
         });
 
 
@@ -1000,7 +773,6 @@ function initializeUser() {
 
             element.textContent =
                 user.email || "";
-
         });
 
 
@@ -1014,9 +786,7 @@ function initializeUser() {
                 name
                     .charAt(0)
                     .toUpperCase();
-
         });
-
 }
 
 
@@ -1030,7 +800,6 @@ function initializeLogout() {
         document.getElementById(
             "logoutButton"
         );
-
 
     if (!button) {
         return;
@@ -1046,10 +815,8 @@ function initializeLogout() {
             window.location.replace(
                 "./login.html"
             );
-
         }
     );
-
 }
 
 
@@ -1063,7 +830,6 @@ async function initializeDashboard() {
         document.getElementById(
             "dashboard"
         );
-
 
     if (!dashboard) {
         return;
@@ -1088,16 +854,13 @@ async function initializeDashboard() {
             trades
         );
 
-
     } catch (error) {
 
         console.error(
             "Dashboard error:",
             error
         );
-
     }
-
 }
 
 
@@ -1105,9 +868,7 @@ async function initializeDashboard() {
    DASHBOARD DATA
    ========================================================= */
 
-function updateDashboard(
-    trades
-) {
+function updateDashboard(trades) {
 
     const total =
         trades.length;
@@ -1118,8 +879,7 @@ function updateDashboard(
             trade =>
                 String(
                     trade.result || ""
-                ).toLowerCase() ===
-                "win"
+                ).toLowerCase() === "win"
         );
 
 
@@ -1128,8 +888,7 @@ function updateDashboard(
             trade =>
                 String(
                     trade.result || ""
-                ).toLowerCase() ===
-                "loss"
+                ).toLowerCase() === "loss"
         );
 
 
@@ -1188,11 +947,9 @@ function updateDashboard(
 
     const winRate =
         total
-            ? (
-                wins.length /
-                total *
-                100
-            )
+            ? wins.length /
+              total *
+              100
             : 0;
 
 
@@ -1221,8 +978,7 @@ function updateDashboard(
     const averageR =
         rValues.length
             ? rValues.reduce(
-                (a, b) =>
-                    a + b,
+                (a, b) => a + b,
                 0
             ) /
             rValues.length
@@ -1231,25 +987,19 @@ function updateDashboard(
 
     const best =
         rValues.length
-            ? Math.max(
-                ...rValues
-            )
+            ? Math.max(...rValues)
             : 0;
 
 
     const worst =
         rValues.length
-            ? Math.min(
-                ...rValues
-            )
+            ? Math.min(...rValues)
             : 0;
 
 
     setText(
         "totalPnl",
-        formatMoney(
-            totalPnl
-        )
+        formatMoney(totalPnl)
     );
 
 
@@ -1301,15 +1051,9 @@ function updateDashboard(
     );
 
 
-    updateRecentTrades(
-        trades
-    );
+    updateRecentTrades(trades);
 
-
-    updateChartState(
-        trades
-    );
-
+    updateChartState(trades);
 }
 
 
@@ -1317,15 +1061,12 @@ function updateDashboard(
    RECENT TRADES
    ========================================================= */
 
-function updateRecentTrades(
-    trades
-) {
+function updateRecentTrades(trades) {
 
     const tbody =
         document.getElementById(
             "recentTrades"
         );
-
 
     if (!tbody) {
         return;
@@ -1343,7 +1084,6 @@ function updateRecentTrades(
         `;
 
         return;
-
     }
 
 
@@ -1362,101 +1102,83 @@ function updateRecentTrades(
                         0
                     )
             )
-            .slice(
-                0,
-                8
-            );
+            .slice(0, 8);
 
 
     tbody.innerHTML =
         recent
-            .map(
-                trade => {
+            .map(trade => {
 
-                    const result =
-                        String(
-                            trade.result ||
-                            ""
-                        ).toLowerCase();
+                const result =
+                    String(
+                        trade.result || ""
+                    ).toLowerCase();
 
 
-                    const resultClass =
-                        result === "win"
-                            ? "positive"
-                            : result === "loss"
-                                ? "negative"
-                                : "";
+                const resultClass =
+                    result === "win"
+                        ? "positive"
+                        : result === "loss"
+                            ? "negative"
+                            : "";
 
 
-                    return `
+                return `
+                    <tr>
 
-                        <tr>
+                        <td>
+                            ${formatDate(
+                                trade.tradeDate ||
+                                trade.trade_date
+                            )}
+                        </td>
 
-                            <td>
-                                ${formatDate(
-                                    trade.tradeDate ||
-                                    trade.trade_date
-                                )}
-                            </td>
-
-                            <td>
-                                <strong>
-                                    ${escapeHtml(
-                                        trade.pair ||
-                                        "-"
-                                    )}
-                                </strong>
-                            </td>
-
-                            <td>
+                        <td>
+                            <strong>
                                 ${escapeHtml(
-                                    trade.direction ||
-                                    "-"
+                                    trade.pair || "-"
                                 )}
-                            </td>
+                            </strong>
+                        </td>
 
-                            <td>
-                                ${escapeHtml(
-                                    trade.setup ||
-                                    trade.strategy ||
-                                    "-"
-                                )}
-                            </td>
+                        <td>
+                            ${escapeHtml(
+                                trade.direction || "-"
+                            )}
+                        </td>
 
-                            <td
-                                class="${resultClass}"
-                            >
-                                ${escapeHtml(
-                                    trade.result ||
-                                    "-"
-                                )}
-                            </td>
+                        <td>
+                            ${escapeHtml(
+                                trade.setup ||
+                                trade.strategy ||
+                                "-"
+                            )}
+                        </td>
 
-                            <td>
-                                ${Number(
-                                    trade.rResult ??
-                                    trade.r_result ??
-                                    0
-                                ).toFixed(2)}R
-                            </td>
+                        <td class="${resultClass}">
+                            ${escapeHtml(
+                                trade.result || "-"
+                            )}
+                        </td>
 
-                            <td
-                                class="${resultClass}"
-                            >
-                                ${formatMoney(
-                                    trade.pnl ||
-                                    0
-                                )}
-                            </td>
+                        <td>
+                            ${Number(
+                                trade.rResult ??
+                                trade.r_result ??
+                                0
+                            ).toFixed(2)}R
+                        </td>
 
-                        </tr>
+                        <td class="${resultClass}">
+                            ${formatMoney(
+                                trade.pnl || 0
+                            )}
+                        </td>
 
-                    `;
-
-                }
-            )
+                    </tr>
+                `;
+            })
             .join("");
-
 }
 
 
@@ -1464,9 +1186,7 @@ function updateRecentTrades(
    CHART
    ========================================================= */
 
-function updateChartState(
-    trades
-) {
+function updateChartState(trades) {
 
     const empty =
         document.getElementById(
@@ -1487,32 +1207,20 @@ function updateChartState(
 
     if (!trades.length) {
 
-        empty.style.display =
-            "flex";
-
+        empty.style.display = "flex";
 
         if (canvas) {
-
-            canvas.style.display =
-                "none";
-
+            canvas.style.display = "none";
         }
 
     } else {
 
-        empty.style.display =
-            "none";
-
+        empty.style.display = "none";
 
         if (canvas) {
-
-            canvas.style.display =
-                "block";
-
+            canvas.style.display = "block";
         }
-
     }
-
 }
 
 
@@ -1526,7 +1234,6 @@ function initializeTradeForm() {
         document.getElementById(
             "tradeForm"
         );
-
 
     if (!form) {
         return;
@@ -1544,9 +1251,7 @@ function initializeTradeForm() {
         !date.value
     ) {
 
-        const now =
-            new Date();
-
+        const now = new Date();
 
         const localDate =
             new Date(
@@ -1560,7 +1265,6 @@ function initializeTradeForm() {
 
         date.value =
             localDate;
-
     }
 
 
@@ -1569,43 +1273,35 @@ function initializeTradeForm() {
         "stopLoss",
         "takeProfit",
         "direction"
-    ].forEach(
-        id => {
+    ].forEach(id => {
 
-            const element =
-                document.getElementById(
-                    id
-                );
+        const element =
+            document.getElementById(id);
 
-
-            if (!element) {
-                return;
-            }
-
-
-            element.addEventListener(
-                "input",
-                calculateRR
-            );
-
-
-            element.addEventListener(
-                "change",
-                calculateRR
-            );
-
+        if (!element) {
+            return;
         }
-    );
+
+
+        element.addEventListener(
+            "input",
+            calculateRR
+        );
+
+
+        element.addEventListener(
+            "change",
+            calculateRR
+        );
+    });
 
 
     calculateRR();
-
 
     form.addEventListener(
         "submit",
         saveTrade
     );
-
 }
 
 
@@ -1613,9 +1309,7 @@ function initializeTradeForm() {
    SAVE TRADE
    ========================================================= */
 
-async function saveTrade(
-    event
-) {
+async function saveTrade(event) {
 
     event.preventDefault();
 
@@ -1627,16 +1321,13 @@ async function saveTrade(
         );
 
         return;
-
     }
 
 
     const getValue =
         id =>
             document
-                .getElementById(
-                    id
-                )
+                .getElementById(id)
                 ?.value || "";
 
 
@@ -1645,75 +1336,50 @@ async function saveTrade(
 
             const value =
                 Number(
-                    getValue(
-                        id
-                    )
+                    getValue(id)
                 );
 
-
-            return Number.isFinite(
-                value
-            )
+            return Number.isFinite(value)
                 ? value
                 : 0;
-
         };
 
 
     const entry =
-        getNumber(
-            "entry"
-        );
+        getNumber("entry");
 
 
     const stopLoss =
-        getNumber(
-            "stopLoss"
-        );
+        getNumber("stopLoss");
 
 
     const takeProfit =
-        getNumber(
-            "takeProfit"
-        );
+        getNumber("takeProfit");
 
 
     const direction =
-        getValue(
-            "direction"
-        );
+        getValue("direction");
 
 
     let riskDistance;
-
     let rewardDistance;
 
 
-    if (
-        direction ===
-        "Buy"
-    ) {
+    if (direction === "Buy") {
 
         riskDistance =
-            entry -
-            stopLoss;
-
+            entry - stopLoss;
 
         rewardDistance =
-            takeProfit -
-            entry;
+            takeProfit - entry;
 
     } else {
 
         riskDistance =
-            stopLoss -
-            entry;
-
+            stopLoss - entry;
 
         rewardDistance =
-            entry -
-            takeProfit;
-
+            entry - takeProfit;
     }
 
 
@@ -1727,92 +1393,61 @@ async function saveTrade(
         );
 
         return;
-
     }
 
 
     const trade = {
 
         tradeDate:
-            getValue(
-                "tradeDate"
-            ),
+            getValue("tradeDate"),
 
         entryTime:
-            getValue(
-                "entryTime"
-            ) || null,
+            getValue("entryTime") || null,
 
         exitTime:
-            getValue(
-                "exitTime"
-            ) || null,
+            getValue("exitTime") || null,
 
         pair:
-            getValue(
-                "pair"
-            )
+            getValue("pair")
                 .trim()
                 .toUpperCase(),
 
         direction,
 
         session:
-            getValue(
-                "session"
-            ),
+            getValue("session"),
 
         strategy:
-            getValue(
-                "strategy"
-            )
+            getValue("strategy")
                 .trim(),
 
         setup:
-            getValue(
-                "setup"
-            )
+            getValue("setup")
                 .trim(),
 
         htfBias:
-            getValue(
-                "htfBias"
-            ),
+            getValue("htfBias"),
 
         mtfStructure:
-            getValue(
-                "mtfStructure"
-            ),
+            getValue("mtfStructure"),
 
         ltfConfirmation:
-            getValue(
-                "ltfConfirmation"
-            ),
+            getValue("ltfConfirmation"),
 
         liquidity:
-            getValue(
-                "liquidity"
-            ),
+            getValue("liquidity"),
 
         mss:
-            getValue(
-                "mss"
-            ),
+            getValue("mss"),
 
         fvg:
-            getValue(
-                "fvg"
-            ),
+            getValue("fvg"),
 
         orderBlock:
-            getValue(
-                "orderBlock"
-            ),
+            getValue("orderBlock"),
 
         zone:
-            getValue(
-                "zone"
-            ),
+            getValue("zone"),
 
         entryPrice:
             entry,
@@ -1822,104 +1457,65 @@ async function saveTrade(
         takeProfit,
 
         exitPrice:
-            getNumber(
-                "exitPrice"
-            ) || null,
+            getNumber("exitPrice") || null,
 
         riskAmount:
-            getNumber(
-                "risk"
-            ),
+            getNumber("risk"),
 
         positionSize:
-            getNumber(
-                "positionSize"
-            ) || null,
+            getNumber("positionSize") || null,
 
         result:
-            getValue(
-                "result"
-            ),
+            getValue("result"),
 
         rResult:
-            getNumber(
-                "rResult"
-            ),
+            getNumber("rResult"),
 
         pnl:
-            getNumber(
-                "pnl"
-            ),
+            getNumber("pnl"),
 
         plannedRR:
             rewardDistance /
             riskDistance,
 
         riskDistance:
-            Math.abs(
-                riskDistance
-            ),
+            Math.abs(riskDistance),
 
         rewardDistance:
-            Math.abs(
-                rewardDistance
-            ),
+            Math.abs(rewardDistance),
 
         psychologyBefore:
-            getValue(
-                "psychologyBefore"
-            ),
+            getValue("psychologyBefore"),
 
         psychologyDuring:
-            getValue(
-                "psychologyDuring"
-            ),
+            getValue("psychologyDuring"),
 
         psychologyAfter:
-            getValue(
-                "psychologyAfter"
-            ),
+            getValue("psychologyAfter"),
 
         followedPlan:
-            getValue(
-                "followedPlan"
-            ),
+            getValue("followedPlan"),
 
         tradeQuality:
-            getValue(
-                "tradeQuality"
-            ),
+            getValue("tradeQuality"),
 
         mistake:
-            getValue(
-                "mistake"
-            ),
+            getValue("mistake"),
 
         entryReason:
-            getValue(
-                "entryReason"
-            ).trim(),
+            getValue("entryReason").trim(),
 
         whatHappened:
-            getValue(
-                "whatHappened"
-            ).trim(),
+            getValue("whatHappened").trim(),
 
         whatDidWell:
-            getValue(
-                "whatDidWell"
-            ).trim(),
+            getValue("whatDidWell").trim(),
 
         improvement:
-            getValue(
-                "improvement"
-            ).trim(),
+            getValue("improvement").trim(),
 
         notes:
-            getValue(
-                "notes"
-            ).trim()
-
+            getValue("notes").trim()
     };
 
 
@@ -1930,7 +1526,6 @@ async function saveTrade(
         );
 
         return;
-
     }
 
 
@@ -1944,12 +1539,10 @@ async function saveTrade(
 
         if (button) {
 
-            button.disabled =
-                true;
+            button.disabled = true;
 
             button.textContent =
                 "Saving...";
-
         }
 
 
@@ -1959,9 +1552,7 @@ async function saveTrade(
                 method: "POST",
 
                 body:
-                    JSON.stringify(
-                        trade
-                    )
+                    JSON.stringify(trade)
             }
         );
 
@@ -1997,16 +1588,12 @@ async function saveTrade(
 
         if (button) {
 
-            button.disabled =
-                false;
+            button.disabled = false;
 
             button.textContent =
                 "Save Trade";
-
         }
-
     }
-
 }
 
 
@@ -2071,64 +1658,40 @@ function calculateRR() {
     ) {
 
         if (rrOutput) {
-
-            rrOutput.textContent =
-                "1 : 0";
-
+            rrOutput.textContent = "1 : 0";
         }
-
 
         if (riskOutput) {
-
-            riskOutput.textContent =
-                "0";
-
+            riskOutput.textContent = "0";
         }
-
 
         if (rewardOutput) {
-
-            rewardOutput.textContent =
-                "0";
-
+            rewardOutput.textContent = "0";
         }
 
-
         return;
-
     }
 
 
     let riskDistance;
-
     let rewardDistance;
 
 
-    if (
-        direction ===
-        "Buy"
-    ) {
+    if (direction === "Buy") {
 
         riskDistance =
-            entry -
-            stop;
-
+            entry - stop;
 
         rewardDistance =
-            target -
-            entry;
+            target - entry;
 
     } else {
 
         riskDistance =
-            stop -
-            entry;
-
+            stop - entry;
 
         rewardDistance =
-            entry -
-            target;
-
+            entry - target;
     }
 
 
@@ -2138,7 +1701,6 @@ function calculateRR() {
             Math.abs(
                 riskDistance
             ).toFixed(5);
-
     }
 
 
@@ -2148,7 +1710,6 @@ function calculateRR() {
             Math.abs(
                 rewardDistance
             ).toFixed(5);
-
     }
 
 
@@ -2158,14 +1719,10 @@ function calculateRR() {
     ) {
 
         if (rrOutput) {
-
-            rrOutput.textContent =
-                "Invalid";
-
+            rrOutput.textContent = "Invalid";
         }
 
         return;
-
     }
 
 
@@ -2178,9 +1735,7 @@ function calculateRR() {
 
         rrOutput.textContent =
             `1 : ${rr.toFixed(2)}`;
-
     }
-
 }
 
 
@@ -2188,30 +1743,18 @@ function calculateRR() {
    HELPERS
    ========================================================= */
 
-function setText(
-    id,
-    value
-) {
+function setText(id, value) {
 
     const element =
-        document.getElementById(
-            id
-        );
-
+        document.getElementById(id);
 
     if (element) {
-
-        element.textContent =
-            value;
-
+        element.textContent = value;
     }
-
 }
 
 
-function formatMoney(
-    value
-) {
+function formatMoney(value) {
 
     return new Intl.NumberFormat(
         "en-US",
@@ -2220,17 +1763,12 @@ function formatMoney(
             currency: "USD"
         }
     ).format(
-        Number(
-            value || 0
-        )
+        Number(value || 0)
     );
-
 }
 
 
-function formatDate(
-    value
-) {
+function formatDate(value) {
 
     if (!value) {
         return "-";
@@ -2248,7 +1786,6 @@ function formatDate(
     ) {
 
         return value;
-
     }
 
 
@@ -2260,66 +1797,30 @@ function formatDate(
             year: "numeric"
         }
     );
-
 }
 
 
-function escapeHtml(
-    value
-) {
+function escapeHtml(value) {
 
     return String(value)
-        .replaceAll(
-            "&",
-            "&amp;"
-        )
-        .replaceAll(
-            "<",
-            "&lt;"
-        )
-        .replaceAll(
-            ">",
-            "&gt;"
-        )
-        .replaceAll(
-            '"',
-            "&quot;"
-        )
-        .replaceAll(
-            "'",
-            "&#039;"
-        );
-
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
 }
 
 
 /* =========================================================
-   START APP
+   START
    ========================================================= */
 
-/*
- * IMPORTANT:
- * Wait until the HTML is fully loaded before
- * initializing login/register/dashboard logic.
- */
-if (
-    document.readyState ===
-    "loading"
-) {
-
-    document.addEventListener(
-        "DOMContentLoaded",
-        initializeAuth,
-        {
-            once: true
-        }
-    );
-
-} else {
-
-    initializeAuth();
-
-}
+document.addEventListener(
+    "DOMContentLoaded",
+    () => {
+        initializeAuth();
+    }
+);
 
 
 /* =========================================================
