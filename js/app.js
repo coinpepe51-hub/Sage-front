@@ -1,6 +1,6 @@
 /* =========================================================
    SAGE JOURNAL
-   FRONTEND APP
+   SINGLE PAGE FRONTEND
    ========================================================= */
 
 const API_BASE_URL =
@@ -19,12 +19,10 @@ function getAuthToken() {
 
 
 function saveAuthToken(token) {
-
     localStorage.setItem(
         "sageJournalToken",
         token
     );
-
 }
 
 
@@ -37,7 +35,6 @@ function clearAuth() {
     localStorage.removeItem(
         "sageJournalUser"
     );
-
 }
 
 
@@ -91,14 +88,27 @@ async function apiRequest(
     }
 
 
-    const response =
-        await fetch(
-            `${API_BASE_URL}${endpoint}`,
-            {
-                ...options,
-                headers
-            }
+    let response;
+
+
+    try {
+
+        response =
+            await fetch(
+                `${API_BASE_URL}${endpoint}`,
+                {
+                    ...options,
+                    headers
+                }
+            );
+
+    } catch (error) {
+
+        throw new Error(
+            "Unable to connect to the Sage server."
         );
+
+    }
 
 
     let data = null;
@@ -118,6 +128,16 @@ async function apiRequest(
 
     if (!response.ok) {
 
+        if (
+            response.status === 401 &&
+            token
+        ) {
+
+            clearAuth();
+
+        }
+
+
         throw new Error(
             data?.error ||
             data?.message ||
@@ -133,32 +153,120 @@ async function apiRequest(
 
 
 /* =========================================================
-   AUTH STATE
+   SCREEN CONTROL
    ========================================================= */
 
-async function checkAuthentication() {
+function showAuthScreen() {
+
+    document.body.classList.remove(
+        "dashboard-mode"
+    );
+
+    document.body.classList.add(
+        "auth-mode"
+    );
+
+}
+
+
+function showDashboard() {
+
+    document.body.classList.remove(
+        "auth-mode"
+    );
+
+    document.body.classList.add(
+        "dashboard-mode"
+    );
+
+}
+
+
+function showLoginForm() {
+
+    const register =
+        document.getElementById(
+            "registerView"
+        );
+
+    const login =
+        document.getElementById(
+            "loginView"
+        );
+
+
+    register?.classList.remove(
+        "active"
+    );
+
+    login?.classList.add(
+        "active"
+    );
+
+
+    document.getElementById(
+        "loginError"
+    ).textContent = "";
+
+
+    document.getElementById(
+        "registerError"
+    ).textContent = "";
+
+}
+
+
+function showRegisterForm() {
+
+    const register =
+        document.getElementById(
+            "registerView"
+        );
+
+    const login =
+        document.getElementById(
+            "loginView"
+        );
+
+
+    login?.classList.remove(
+        "active"
+    );
+
+    register?.classList.add(
+        "active"
+    );
+
+
+    document.getElementById(
+        "loginError"
+    ).textContent = "";
+
+
+    document.getElementById(
+        "registerError"
+    ).textContent = "";
+
+}
+
+
+/* =========================================================
+   AUTH VERIFICATION
+   ========================================================= */
+
+async function verifyAuthentication() {
 
     const token =
         getAuthToken();
 
 
-    /*
-     * No token:
-     * show login immediately.
-     */
     if (!token) {
-
-        showAuth();
 
         return false;
 
     }
 
 
-    /*
-     * Token exists.
-     * Verify it against Render/backend.
-     */
     try {
 
         const data =
@@ -167,13 +275,11 @@ async function checkAuthentication() {
             );
 
 
-        if (
-            !data?.user
-        ) {
+        if (!data?.user) {
 
-            throw new Error(
-                "Invalid authentication response"
-            );
+            clearAuth();
+
+            return false;
 
         }
 
@@ -186,23 +292,11 @@ async function checkAuthentication() {
         );
 
 
-        showApp();
-
-
         return true;
 
-    } catch (error) {
-
-        console.warn(
-            "Authentication check failed:",
-            error
-        );
-
+    } catch {
 
         clearAuth();
-
-        showAuth();
-
 
         return false;
 
@@ -212,207 +306,136 @@ async function checkAuthentication() {
 
 
 /* =========================================================
-   AUTH UI
+   START
    ========================================================= */
 
-function showAuth() {
+async function initializeApp() {
 
+    /*
+     * Keep the page hidden while
+     * authentication is checked.
+     */
     document.body.classList.remove(
-        "auth-loading"
+        "app-ready"
     );
 
-    document.body.classList.remove(
-        "show-app"
-    );
+
+    const token =
+        getAuthToken();
+
+
+    /*
+     * No token = brand-new/logged-out user.
+     */
+    if (!token) {
+
+        showAuthScreen();
+
+        document.body.classList.add(
+            "app-ready"
+        );
+
+        initializeAuthForms();
+
+        return;
+
+    }
+
+
+    /*
+     * Token exists.
+     * Verify it against the
+     * deployed backend/database.
+     */
+    const valid =
+        await verifyAuthentication();
+
+
+    if (!valid) {
+
+        showAuthScreen();
+
+        document.body.classList.add(
+            "app-ready"
+        );
+
+        initializeAuthForms();
+
+        return;
+
+    }
+
+
+    /*
+     * Valid session.
+     */
+    showDashboard();
+
+    initializeDashboardApp();
 
     document.body.classList.add(
-        "show-auth"
+        "app-ready"
     );
-
-}
-
-
-function showApp() {
-
-    document.body.classList.remove(
-        "auth-loading"
-    );
-
-    document.body.classList.remove(
-        "show-auth"
-    );
-
-    document.body.classList.add(
-        "show-app"
-    );
-
-
-    initializeNavigation();
-
-    initializeUser();
-
-    initializeLogout();
-
-    initializeDashboard();
 
 }
 
 
 /* =========================================================
-   SWITCH LOGIN / REGISTER
+   AUTH FORMS
    ========================================================= */
 
-function showLoginView() {
+function initializeAuthForms() {
 
-    const login =
+    const loginForm =
         document.getElementById(
-            "loginView"
+            "loginForm"
         );
 
-    const register =
+
+    const registerForm =
         document.getElementById(
-            "registerView"
+            "registerForm"
         );
 
 
-    if (login) {
-
-        login.classList.add(
-            "active"
-        );
-
-    }
-
-
-    if (register) {
-
-        register.classList.remove(
-            "active"
-        );
-
-    }
-
-
-    const loginError =
-        document.getElementById(
-            "loginError"
-        );
-
-
-    const registerError =
-        document.getElementById(
-            "registerError"
-        );
-
-
-    if (loginError) {
-        loginError.textContent = "";
-    }
-
-
-    if (registerError) {
-        registerError.textContent = "";
-    }
-
-}
-
-
-function showRegisterView() {
-
-    const login =
-        document.getElementById(
-            "loginView"
-        );
-
-    const register =
-        document.getElementById(
-            "registerView"
-        );
-
-
-    if (login) {
-
-        login.classList.remove(
-            "active"
-        );
-
-    }
-
-
-    if (register) {
-
-        register.classList.add(
-            "active"
-        );
-
-    }
-
-
-    const loginError =
-        document.getElementById(
-            "loginError"
-        );
-
-
-    const registerError =
-        document.getElementById(
-            "registerError"
-        );
-
-
-    if (loginError) {
-        loginError.textContent = "";
-    }
-
-
-    if (registerError) {
-        registerError.textContent = "";
-    }
-
-}
-
-
-/* =========================================================
-   AUTH INITIALIZATION
-   ========================================================= */
-
-function initializeAuthUI() {
-
-    const showRegister =
-        document.getElementById(
-            "showRegister"
-        );
-
-
-    const showLogin =
-        document.getElementById(
+    document
+        .getElementById(
             "showLogin"
+        )
+        ?.addEventListener(
+            "click",
+            showLoginForm
         );
 
 
-    if (showRegister) {
-
-        showRegister.addEventListener(
+    document
+        .getElementById(
+            "showRegister"
+        )
+        ?.addEventListener(
             "click",
-            showRegisterView
+            showRegisterForm
+        );
+
+
+    if (loginForm) {
+
+        loginForm.addEventListener(
+            "submit",
+            handleLogin
         );
 
     }
 
 
-    if (showLogin) {
+    if (registerForm) {
 
-        showLogin.addEventListener(
-            "click",
-            showLoginView
+        registerForm.addEventListener(
+            "submit",
+            handleRegister
         );
 
     }
-
-
-    initializeLogin();
-
-    initializeRegister();
 
 }
 
@@ -421,172 +444,123 @@ function initializeAuthUI() {
    LOGIN
    ========================================================= */
 
-function initializeLogin() {
+async function handleLogin(event) {
 
-    const form =
+    event.preventDefault();
+
+
+    const email =
+        document
+            .getElementById(
+                "loginEmail"
+            )
+            .value
+            .trim();
+
+
+    const password =
+        document
+            .getElementById(
+                "loginPassword"
+            )
+            .value;
+
+
+    const error =
         document.getElementById(
-            "loginForm"
+            "loginError"
         );
 
 
-    if (!form) {
+    const button =
+        event.currentTarget.querySelector(
+            'button[type="submit"]'
+        );
+
+
+    error.textContent = "";
+
+
+    if (!email || !password) {
+
+        error.textContent =
+            "Enter your email and password.";
+
         return;
+
     }
 
 
-    form.addEventListener(
-        "submit",
-        async event => {
+    try {
 
-            event.preventDefault();
+        button.disabled = true;
 
-
-            const email =
-                document
-                    .getElementById(
-                        "loginEmail"
-                    )
-                    ?.value
-                    .trim();
+        button.textContent =
+            "Signing in...";
 
 
-            const password =
-                document
-                    .getElementById(
-                        "loginPassword"
-                    )
-                    ?.value;
+        const data =
+            await apiRequest(
+                "/auth/login",
+                {
+                    method: "POST",
 
-
-            const error =
-                document.getElementById(
-                    "loginError"
-                );
-
-
-            if (error) {
-
-                error.textContent = "";
-
-            }
-
-
-            if (
-                !email ||
-                !password
-            ) {
-
-                if (error) {
-
-                    error.textContent =
-                        "Enter your email and password.";
-
+                    body:
+                        JSON.stringify({
+                            email,
+                            password
+                        })
                 }
-
-                return;
-
-            }
+            );
 
 
-            const button =
-                form.querySelector(
-                    'button[type="submit"]'
-                );
+        if (!data?.token) {
 
-
-            try {
-
-                if (button) {
-
-                    button.disabled =
-                        true;
-
-                    button.textContent =
-                        "Signing in...";
-
-                }
-
-
-                const data =
-                    await apiRequest(
-                        "/auth/login",
-                        {
-                            method: "POST",
-
-                            body:
-                                JSON.stringify({
-                                    email,
-                                    password
-                                })
-                        }
-                    );
-
-
-                if (!data?.token) {
-
-                    throw new Error(
-                        "Login succeeded but no authentication token was returned."
-                    );
-
-                }
-
-
-                saveAuthToken(
-                    data.token
-                );
-
-
-                if (data.user) {
-
-                    localStorage.setItem(
-                        "sageJournalUser",
-                        JSON.stringify(
-                            data.user
-                        )
-                    );
-
-                }
-
-
-                /*
-                 * No page redirect.
-                 * Just show the dashboard.
-                 */
-                showApp();
-
-
-            } catch (err) {
-
-                console.error(
-                    "Login error:",
-                    err
-                );
-
-
-                if (error) {
-
-                    error.textContent =
-                        err.message;
-
-                }
-
-
-            } finally {
-
-                if (button) {
-
-                    button.disabled =
-                        false;
-
-                    button.textContent =
-                        "Login";
-
-                }
-
-            }
+            throw new Error(
+                "Login succeeded but no authentication token was returned."
+            );
 
         }
-    );
+
+
+        saveAuthToken(
+            data.token
+        );
+
+
+        if (data.user) {
+
+            localStorage.setItem(
+                "sageJournalUser",
+                JSON.stringify(
+                    data.user
+                )
+            );
+
+        }
+
+
+        /*
+         * No login.html.
+         * No redirect.
+         * Simply switch to dashboard.
+         */
+        showDashboard();
+
+        initializeDashboardApp();
+
+
+    } catch (err) {
+
+        error.textContent =
+            err.message;
+
+        button.disabled = false;
+
+        button.textContent =
+            "Login";
+
+    }
 
 }
 
@@ -595,208 +569,190 @@ function initializeLogin() {
    REGISTER
    ========================================================= */
 
-function initializeRegister() {
+async function handleRegister(event) {
 
-    const form =
+    event.preventDefault();
+
+
+    const displayName =
+        document
+            .getElementById(
+                "registerName"
+            )
+            .value
+            .trim();
+
+
+    const email =
+        document
+            .getElementById(
+                "registerEmail"
+            )
+            .value
+            .trim();
+
+
+    const password =
+        document
+            .getElementById(
+                "registerPassword"
+            )
+            .value;
+
+
+    const error =
         document.getElementById(
-            "registerForm"
+            "registerError"
         );
 
 
-    if (!form) {
+    const button =
+        event.currentTarget.querySelector(
+            'button[type="submit"]'
+        );
+
+
+    error.textContent = "";
+
+
+    if (
+        !displayName ||
+        !email ||
+        !password
+    ) {
+
+        error.textContent =
+            "Please complete all fields.";
+
         return;
+
     }
 
 
-    form.addEventListener(
-        "submit",
-        async event => {
+    if (password.length < 8) {
 
-            event.preventDefault();
+        error.textContent =
+            "Password must be at least 8 characters.";
 
+        return;
 
-            const displayName =
-                document
-                    .getElementById(
-                        "registerName"
-                    )
-                    ?.value
-                    .trim();
+    }
 
 
-            const email =
-                document
-                    .getElementById(
-                        "registerEmail"
-                    )
-                    ?.value
-                    .trim();
+    try {
+
+        button.disabled = true;
+
+        button.textContent =
+            "Creating account...";
 
 
-            const password =
-                document
-                    .getElementById(
-                        "registerPassword"
-                    )
-                    ?.value;
+        const data =
+            await apiRequest(
+                "/auth/register",
+                {
+                    method: "POST",
 
+                    body:
+                        JSON.stringify({
 
-            const error =
-                document.getElementById(
-                    "registerError"
-                );
+                            displayName,
 
+                            email,
 
-            if (error) {
+                            password
 
-                error.textContent = "";
-
-            }
-
-
-            if (
-                !displayName ||
-                !email ||
-                !password
-            ) {
-
-                if (error) {
-
-                    error.textContent =
-                        "Please complete all fields.";
-
+                        })
                 }
-
-                return;
-
-            }
+            );
 
 
-            if (
-                password.length < 8
-            ) {
+        if (!data?.token) {
 
-                if (error) {
-
-                    error.textContent =
-                        "Password must be at least 8 characters.";
-
-                }
-
-                return;
-
-            }
-
-
-            const button =
-                form.querySelector(
-                    'button[type="submit"]'
-                );
-
-
-            try {
-
-                if (button) {
-
-                    button.disabled =
-                        true;
-
-                    button.textContent =
-                        "Creating account...";
-
-                }
-
-
-                const data =
-                    await apiRequest(
-                        "/auth/register",
-                        {
-                            method: "POST",
-
-                            body:
-                                JSON.stringify({
-
-                                    displayName,
-
-                                    email,
-
-                                    password
-
-                                })
-                        }
-                    );
-
-
-                if (!data?.token) {
-
-                    throw new Error(
-                        "Account was created but no authentication token was returned."
-                    );
-
-                }
-
-
-                /*
-                 * Save the JWT returned by
-                 * the deployed Render backend.
-                 */
-                saveAuthToken(
-                    data.token
-                );
-
-
-                if (data.user) {
-
-                    localStorage.setItem(
-                        "sageJournalUser",
-                        JSON.stringify(
-                            data.user
-                        )
-                    );
-
-                }
-
-
-                /*
-                 * No redirect.
-                 * New account immediately enters
-                 * the dashboard.
-                 */
-                showApp();
-
-
-            } catch (err) {
-
-                console.error(
-                    "Registration error:",
-                    err
-                );
-
-
-                if (error) {
-
-                    error.textContent =
-                        err.message;
-
-                }
-
-
-            } finally {
-
-                if (button) {
-
-                    button.disabled =
-                        false;
-
-                    button.textContent =
-                        "Create Account";
-
-                }
-
-            }
+            throw new Error(
+                "Account was created but no authentication token was returned."
+            );
 
         }
-    );
+
+
+        saveAuthToken(
+            data.token
+        );
+
+
+        if (data.user) {
+
+            localStorage.setItem(
+                "sageJournalUser",
+                JSON.stringify(
+                    data.user
+                )
+            );
+
+        }
+
+
+        /*
+         * Registration is complete.
+         * Show dashboard immediately.
+         */
+        showDashboard();
+
+        initializeDashboardApp();
+
+
+    } catch (err) {
+
+        error.textContent =
+            err.message;
+
+        button.disabled = false;
+
+        button.textContent =
+            "Create Account";
+
+    }
+
+}
+
+
+/* =========================================================
+   DASHBOARD INITIALIZATION
+   ========================================================= */
+
+let dashboardInitialized = false;
+
+
+function initializeDashboardApp() {
+
+    /*
+     * Prevent duplicate event listeners
+     * when switching login -> dashboard.
+     */
+    if (dashboardInitialized) {
+
+        initializeUser();
+
+        initializeDashboard();
+
+        return;
+
+    }
+
+
+    dashboardInitialized = true;
+
+
+    initializeNavigation();
+
+    initializeUser();
+
+    initializeLogout();
+
+    initializeTradeForm();
+
+    initializeDashboard();
 
 }
 
@@ -821,13 +777,8 @@ function initializeNavigation() {
 
     if (
         mobileMenu &&
-        sidebar &&
-        !mobileMenu.dataset.initialized
+        sidebar
     ) {
-
-        mobileMenu.dataset.initialized =
-            "true";
-
 
         mobileMenu.addEventListener(
             "click",
@@ -848,24 +799,6 @@ function initializeNavigation() {
             ".nav-item"
         )
         .forEach(item => {
-
-            const href =
-                item.getAttribute(
-                    "href"
-                );
-
-
-            if (
-                href ===
-                "index.html"
-            ) {
-
-                item.classList.add(
-                    "active"
-                );
-
-            }
-
 
             item.addEventListener(
                 "click",
@@ -901,8 +834,7 @@ function initializeUser() {
     const name =
         user.displayName ||
         user.name ||
-        user.email
-            ?.split("@")[0] ||
+        user.email?.split("@")[0] ||
         "Trader";
 
 
@@ -958,18 +890,9 @@ function initializeLogout() {
         );
 
 
-    if (
-        !button ||
-        button.dataset.initialized
-    ) {
-
+    if (!button) {
         return;
-
     }
-
-
-    button.dataset.initialized =
-        "true";
 
 
     button.addEventListener(
@@ -978,9 +901,12 @@ function initializeLogout() {
 
             clearAuth();
 
-            showAuth();
+            dashboardInitialized =
+                false;
 
-            showLoginView();
+            showAuthScreen();
+
+            showLoginForm();
 
         }
     );
@@ -1031,25 +957,6 @@ async function initializeDashboard() {
             error
         );
 
-        /*
-         * If the deployed backend says the
-         * token is invalid, return to auth.
-         */
-        if (
-            String(
-                error.message || ""
-            ).toLowerCase()
-                .includes(
-                    "token"
-                )
-        ) {
-
-            clearAuth();
-
-            showAuth();
-
-        }
-
     }
 
 }
@@ -1059,9 +966,7 @@ async function initializeDashboard() {
    DASHBOARD DATA
    ========================================================= */
 
-function updateDashboard(
-    trades
-) {
+function updateDashboard(trades) {
 
     const total =
         trades.length;
@@ -1142,11 +1047,9 @@ function updateDashboard(
 
     const winRate =
         total
-            ? (
-                wins.length /
-                total *
-                100
-            )
+            ? wins.length /
+              total *
+              100
             : 0;
 
 
@@ -1201,7 +1104,9 @@ function updateDashboard(
 
     setText(
         "totalPnl",
-        formatMoney(totalPnl)
+        formatMoney(
+            totalPnl
+        )
     );
 
 
@@ -1269,9 +1174,7 @@ function updateDashboard(
    RECENT TRADES
    ========================================================= */
 
-function updateRecentTrades(
-    trades
-) {
+function updateRecentTrades(trades) {
 
     const tbody =
         document.getElementById(
@@ -1314,10 +1217,7 @@ function updateRecentTrades(
                         0
                     )
             )
-            .slice(
-                0,
-                8
-            );
+            .slice(0, 8);
 
 
     tbody.innerHTML =
@@ -1341,7 +1241,6 @@ function updateRecentTrades(
 
 
                     return `
-
                         <tr>
 
                             <td>
@@ -1375,9 +1274,7 @@ function updateRecentTrades(
                                 )}
                             </td>
 
-                            <td
-                                class="${resultClass}"
-                            >
+                            <td class="${resultClass}">
                                 ${escapeHtml(
                                     trade.result ||
                                     "-"
@@ -1392,9 +1289,7 @@ function updateRecentTrades(
                                 ).toFixed(2)}R
                             </td>
 
-                            <td
-                                class="${resultClass}"
-                            >
+                            <td class="${resultClass}">
                                 ${formatMoney(
                                     trade.pnl ||
                                     0
@@ -1402,7 +1297,6 @@ function updateRecentTrades(
                             </td>
 
                         </tr>
-
                     `;
 
                 }
@@ -1416,9 +1310,7 @@ function updateRecentTrades(
    CHART STATE
    ========================================================= */
 
-function updateChartState(
-    trades
-) {
+function updateChartState(trades) {
 
     const empty =
         document.getElementById(
@@ -1469,18 +1361,606 @@ function updateChartState(
 
 
 /* =========================================================
+   TRADE FORM
+   ========================================================= */
+
+function initializeTradeForm() {
+
+    const form =
+        document.getElementById(
+            "tradeForm"
+        );
+
+
+    if (!form) {
+        return;
+    }
+
+
+    const date =
+        document.getElementById(
+            "tradeDate"
+        );
+
+
+    if (
+        date &&
+        !date.value
+    ) {
+
+        const now =
+            new Date();
+
+
+        const localDate =
+            new Date(
+                now.getTime() -
+                now.getTimezoneOffset() *
+                60000
+            )
+                .toISOString()
+                .split("T")[0];
+
+
+        date.value =
+            localDate;
+
+    }
+
+
+    [
+        "entry",
+        "stopLoss",
+        "takeProfit",
+        "direction"
+    ].forEach(id => {
+
+        const element =
+            document.getElementById(
+                id
+            );
+
+
+        if (!element) {
+            return;
+        }
+
+
+        element.addEventListener(
+            "input",
+            calculateRR
+        );
+
+
+        element.addEventListener(
+            "change",
+            calculateRR
+        );
+
+    });
+
+
+    calculateRR();
+
+
+    form.addEventListener(
+        "submit",
+        saveTrade
+    );
+
+}
+
+
+/* =========================================================
+   SAVE TRADE
+   ========================================================= */
+
+async function saveTrade(event) {
+
+    event.preventDefault();
+
+
+    if (!getAuthToken()) {
+
+        showAuthScreen();
+
+        showLoginForm();
+
+        return;
+
+    }
+
+
+    const getValue =
+        id =>
+            document
+                .getElementById(id)
+                ?.value || "";
+
+
+    const getNumber =
+        id => {
+
+            const value =
+                Number(
+                    getValue(id)
+                );
+
+
+            return Number.isFinite(
+                value
+            )
+                ? value
+                : 0;
+
+        };
+
+
+    const entry =
+        getNumber("entry");
+
+
+    const stopLoss =
+        getNumber("stopLoss");
+
+
+    const takeProfit =
+        getNumber("takeProfit");
+
+
+    const direction =
+        getValue("direction");
+
+
+    let riskDistance;
+
+    let rewardDistance;
+
+
+    if (direction === "Buy") {
+
+        riskDistance =
+            entry - stopLoss;
+
+        rewardDistance =
+            takeProfit - entry;
+
+    } else {
+
+        riskDistance =
+            stopLoss - entry;
+
+        rewardDistance =
+            entry - takeProfit;
+
+    }
+
+
+    if (
+        riskDistance <= 0 ||
+        rewardDistance <= 0
+    ) {
+
+        alert(
+            "Your Stop Loss and Take Profit do not match the trade direction."
+        );
+
+        return;
+
+    }
+
+
+    const trade = {
+
+        tradeDate:
+            getValue("tradeDate"),
+
+        entryTime:
+            getValue("entryTime") ||
+            null,
+
+        exitTime:
+            getValue("exitTime") ||
+            null,
+
+        pair:
+            getValue("pair")
+                .trim()
+                .toUpperCase(),
+
+        direction,
+
+        session:
+            getValue("session"),
+
+        strategy:
+            getValue("strategy")
+                .trim(),
+
+        setup:
+            getValue("setup")
+                .trim(),
+
+        htfBias:
+            getValue("htfBias"),
+
+        mtfStructure:
+            getValue("mtfStructure"),
+
+        ltfConfirmation:
+            getValue("ltfConfirmation"),
+
+        liquidity:
+            getValue("liquidity"),
+
+        mss:
+            getValue("mss"),
+
+        fvg:
+            getValue("fvg"),
+
+        orderBlock:
+            getValue("orderBlock"),
+
+        zone:
+            getValue("zone"),
+
+        entryPrice:
+            entry,
+
+        stopLoss,
+
+        takeProfit,
+
+        exitPrice:
+            getNumber("exitPrice") ||
+            null,
+
+        riskAmount:
+            getNumber("risk"),
+
+        positionSize:
+            getNumber("positionSize") ||
+            null,
+
+        result:
+            getValue("result"),
+
+        rResult:
+            getNumber("rResult"),
+
+        pnl:
+            getNumber("pnl"),
+
+        plannedRR:
+            rewardDistance /
+            riskDistance,
+
+        riskDistance:
+            Math.abs(
+                riskDistance
+            ),
+
+        rewardDistance:
+            Math.abs(
+                rewardDistance
+            ),
+
+        psychologyBefore:
+            getValue(
+                "psychologyBefore"
+            ),
+
+        psychologyDuring:
+            getValue(
+                "psychologyDuring"
+            ),
+
+        psychologyAfter:
+            getValue(
+                "psychologyAfter"
+            ),
+
+        followedPlan:
+            getValue(
+                "followedPlan"
+            ),
+
+        tradeQuality:
+            getValue(
+                "tradeQuality"
+            ),
+
+        mistake:
+            getValue(
+                "mistake"
+            ),
+
+        entryReason:
+            getValue(
+                "entryReason"
+            ).trim(),
+
+        whatHappened:
+            getValue(
+                "whatHappened"
+            ).trim(),
+
+        whatDidWell:
+            getValue(
+                "whatDidWell"
+            ).trim(),
+
+        improvement:
+            getValue(
+                "improvement"
+            ).trim(),
+
+        notes:
+            getValue(
+                "notes"
+            ).trim()
+
+    };
+
+
+    if (!trade.pair) {
+
+        alert(
+            "Please enter a pair or market."
+        );
+
+        return;
+
+    }
+
+
+    try {
+
+        const button =
+            event.target.querySelector(
+                'button[type="submit"]'
+            );
+
+
+        if (button) {
+
+            button.disabled = true;
+
+            button.textContent =
+                "Saving...";
+
+        }
+
+
+        await apiRequest(
+            "/trades",
+            {
+                method: "POST",
+
+                body:
+                    JSON.stringify(
+                        trade
+                    )
+            }
+        );
+
+
+        alert(
+            "Trade saved successfully."
+        );
+
+
+        window.location.href =
+            "trades.html";
+
+
+    } catch (error) {
+
+        console.error(
+            "Trade save error:",
+            error
+        );
+
+
+        alert(
+            `Could not save trade: ${error.message}`
+        );
+
+
+        const button =
+            event.target.querySelector(
+                'button[type="submit"]'
+            );
+
+
+        if (button) {
+
+            button.disabled = false;
+
+            button.textContent =
+                "Save Trade";
+
+        }
+
+    }
+
+}
+
+
+/* =========================================================
+   RR CALCULATOR
+   ========================================================= */
+
+function calculateRR() {
+
+    const entry =
+        Number(
+            document.getElementById(
+                "entry"
+            )?.value
+        );
+
+
+    const stop =
+        Number(
+            document.getElementById(
+                "stopLoss"
+            )?.value
+        );
+
+
+    const target =
+        Number(
+            document.getElementById(
+                "takeProfit"
+            )?.value
+        );
+
+
+    const direction =
+        document.getElementById(
+            "direction"
+        )?.value;
+
+
+    const rrOutput =
+        document.getElementById(
+            "calculatedRR"
+        );
+
+
+    const riskOutput =
+        document.getElementById(
+            "riskDistance"
+        );
+
+
+    const rewardOutput =
+        document.getElementById(
+            "rewardDistance"
+        );
+
+
+    if (
+        !entry ||
+        !stop ||
+        !target
+    ) {
+
+        if (rrOutput) {
+
+            rrOutput.textContent =
+                "1 : 0";
+
+        }
+
+
+        if (riskOutput) {
+
+            riskOutput.textContent =
+                "0";
+
+        }
+
+
+        if (rewardOutput) {
+
+            rewardOutput.textContent =
+                "0";
+
+        }
+
+
+        return;
+
+    }
+
+
+    let riskDistance;
+
+    let rewardDistance;
+
+
+    if (direction === "Buy") {
+
+        riskDistance =
+            entry - stop;
+
+        rewardDistance =
+            target - entry;
+
+    } else {
+
+        riskDistance =
+            stop - entry;
+
+        rewardDistance =
+            entry - target;
+
+    }
+
+
+    if (riskOutput) {
+
+        riskOutput.textContent =
+            Math.abs(
+                riskDistance
+            ).toFixed(5);
+
+    }
+
+
+    if (rewardOutput) {
+
+        rewardOutput.textContent =
+            Math.abs(
+                rewardDistance
+            ).toFixed(5);
+
+    }
+
+
+    if (
+        riskDistance <= 0 ||
+        rewardDistance <= 0
+    ) {
+
+        if (rrOutput) {
+
+            rrOutput.textContent =
+                "Invalid";
+
+        }
+
+        return;
+
+    }
+
+
+    const rr =
+        rewardDistance /
+        riskDistance;
+
+
+    if (rrOutput) {
+
+        rrOutput.textContent =
+            `1 : ${rr.toFixed(2)}`;
+
+    }
+
+}
+
+
+/* =========================================================
    HELPERS
    ========================================================= */
 
-function setText(
-    id,
-    value
-) {
+function setText(id, value) {
 
     const element =
-        document.getElementById(
-            id
-        );
+        document.getElementById(id);
 
 
     if (element) {
@@ -1493,9 +1973,7 @@ function setText(
 }
 
 
-function formatMoney(
-    value
-) {
+function formatMoney(value) {
 
     return new Intl.NumberFormat(
         "en-US",
@@ -1512,9 +1990,7 @@ function formatMoney(
 }
 
 
-function formatDate(
-    value
-) {
+function formatDate(value) {
 
     if (!value) {
         return "-";
@@ -1548,9 +2024,7 @@ function formatDate(
 }
 
 
-function escapeHtml(
-    value
-) {
+function escapeHtml(value) {
 
     return String(value)
         .replaceAll(
@@ -1583,13 +2057,7 @@ function escapeHtml(
 
 document.addEventListener(
     "DOMContentLoaded",
-    async () => {
-
-        initializeAuthUI();
-
-        await checkAuthentication();
-
-    }
+    initializeApp
 );
 
 
@@ -1607,6 +2075,8 @@ window.SageJournal = {
 
     clearAuth,
 
-    getCurrentUser
+    getCurrentUser,
+
+    calculateRR
 
 };
