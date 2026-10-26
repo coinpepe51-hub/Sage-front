@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sage Journal — Calendar</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+<div class="app">
+
+    <aside class="sidebar">
+        <div class="brand">
+            <div class="brand-mark">S</div>
+            <div>
+                <h2>Sage</h2>
+                <span>Journal</span>
+            </div>
+        </div>
+
+        <nav>
+            <a href="index.html" class="nav-item">
+                <span>⌂</span> Dashboard
+            </a>
+
+            <a href="calendar.html" class="nav-item active">
+                <span>□</span> Calendar
+            </a>
+
+            <a href="trades.html" class="nav-item">
+                <span>↗</span> Trades
+            </a>
+
+            <a href="add-trade.html" class="nav-item">
+                <span>＋</span> Add Trade
+            </a>
+
+            <a href="analytics.html" class="nav-item">
+                <span>◫</span> Analytics
+            </a>
+        </nav>
+
+        <div class="sidebar-bottom">
+            <div class="account-mini">
+                <div class="avatar">S</div>
+                <div>
+                    <strong>Trader</strong>
+                    <small>Demo Account</small>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+
+    <main class="main">
+
+        <header class="topbar">
+            <button class="mobile-menu" id="mobileMenu">☰</button>
+
+            <div>
+                <p class="eyebrow">TRADING JOURNAL</p>
+                <h1>Calendar</h1>
+            </div>
+
+            <a href="add-trade.html" class="primary-btn">
+                + Add Trade
+            </a>
+        </header>
+
+
+        <section class="panel calendar-panel">
+
+            <div class="calendar-top">
+
+                <button class="calendar-arrow" id="prevMonth">←</button>
+
+                <h2 id="calendarTitle"></h2>
+
+                <button class="calendar-arrow" id="nextMonth">→</button>
+
+            </div>
+
+
+            <div class="calendar-weekdays">
+                <span>Sun</span>
+                <span>Mon</span>
+                <span>Tue</span>
+                <span>Wed</span>
+                <span>Thu</span>
+                <span>Fri</span>
+                <span>Sat</span>
+            </div>
+
+
+            <div class="calendar-grid" id="calendarGrid"></div>
+
+
+            <div class="calendar-legend">
+
+                <div>
+                    <i class="legend-dot win"></i>
+                    Winning day
+                </div>
+
+                <div>
+                    <i class="legend-dot loss"></i>
+                    Losing day
+                </div>
+
+                <div>
+                    <i class="legend-dot neutral"></i>
+                    No trades
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+</div>
+
+<script src="js/app.js"></script>
+
+</body>
+</html>
